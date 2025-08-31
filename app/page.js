@@ -39,17 +39,53 @@ export default function UtilizationPilot() {
 
   // Get link token on component mount
   useEffect(() => {
+    let mounted = true;
+    
     const initializeApp = async () => {
       try {
         console.log('Initializing app...');
-        await Promise.all([fetchLinkToken(), fetchDashboard()]);
-        console.log('App initialization complete');
+        
+        // Fetch both in parallel
+        const [linkTokenResponse, dashboardResponse] = await Promise.all([
+          fetch('/api/link-token'),
+          fetch('/api/dashboard')
+        ]);
+        
+        // Process link token
+        if (linkTokenResponse.ok) {
+          const linkData = await linkTokenResponse.json();
+          if (mounted && linkData.link_token) {
+            setLinkToken(linkData.link_token);
+          }
+        }
+        
+        // Process dashboard
+        if (dashboardResponse.ok) {
+          const dashboardData = await dashboardResponse.json();
+          if (mounted) {
+            setDashboardData(dashboardData);
+            console.log('Dashboard data loaded:', dashboardData);
+          }
+        }
+        
+        if (mounted) {
+          setLoading(false);
+          console.log('App initialization complete');
+        }
       } catch (error) {
         console.error('App initialization failed:', error);
-        setLoading(false);
+        if (mounted) {
+          setError('Failed to initialize app');
+          setLoading(false);
+        }
       }
     };
+    
     initializeApp();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const fetchLinkToken = async () => {
