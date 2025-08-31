@@ -41,10 +41,10 @@ export default function UtilizationPilot() {
   // Force loading to false after a short delay to prevent hanging
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log('Forcing loading to false after 3 seconds');
+      console.log('Forcing loading to false after 2 seconds');
       setLoading(false);
       setDataLoaded(true);
-    }, 3000);
+    }, 2000);
     
     return () => clearTimeout(timer);
   }, []);
