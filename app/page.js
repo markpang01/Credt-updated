@@ -44,6 +44,8 @@ export default function UtilizationPilot() {
   const [dashboardData, setDashboardData] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [healthyCardsExpanded, setHealthyCardsExpanded] = useState(false);
+  const [attentionCardsExpanded, setAttentionCardsExpanded] = useState(false);
 
   const supabase = createClient();
 
