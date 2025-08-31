@@ -649,65 +649,21 @@ export default function UtilizationPilot() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cards in Excellent Range</CardTitle>
+              <CardTitle className="text-sm font-medium">Healthy Cards</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1">
-                    <div className="text-2xl font-bold text-green-600">{summary?.excellentCards || 0}</div>
-                    <p className="text-xs text-muted-foreground">0-9% utilization ▼</p>
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto">
-                  {creditCards?.filter(card => card.band.band === 'excellent').map(card => (
-                    <div key={card.id} className="p-3 border-b last:border-b-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                          <span className="font-medium text-sm">{card.name}</span>
-                        </div>
-                        <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
-                          {card.utilization}% - {card.band.band.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-2">{card.officialName}</div>
-                      <Progress value={card.utilization} className="h-1 mb-2" />
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-muted-foreground">Balance:</span>
-                          <div className="font-medium">{formatCurrency(card.balance)}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Limit:</span>
-                          <div className="font-medium">{formatCurrency(card.limit)}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Statement Close:</span>
-                          <div className="font-medium">{formatDate(card.closeDate)}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Days Until Close:</span>
-                          <div className={`font-medium ${card.daysUntilClose <= 3 ? 'text-red-600' : 'text-green-600'}`}>
-                            {card.daysUntilClose} days
-                          </div>
-                        </div>
-                      </div>
-                      {card.paydownAmount > 0 && (
-                        <div className="mt-2 p-2 bg-green-50 rounded text-xs">
-                          <span className="text-green-700 font-medium">
-                            Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to maintain 9% utilization
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {creditCards?.filter(card => card.band.band === 'excellent').length === 0 && (
-                    <div className="p-3 text-center text-muted-foreground text-sm">No cards in excellent range</div>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div 
+                className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
+                onClick={() => setHealthyCardsExpanded(!healthyCardsExpanded)}
+              >
+                <div className="text-2xl font-bold text-green-600">
+                  {creditCards?.filter(card => card.utilization < 30).length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Under 30% utilization {healthyCardsExpanded ? '▲' : '▼'}
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -717,72 +673,17 @@ export default function UtilizationPilot() {
               <AlertCircle className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {(summary?.warningCards || 0) + (summary?.badCards || 0) + (summary?.severeCards || 0)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Above 30% utilization ▼</p>
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto">
-                  {creditCards?.filter(card => card.utilization >= 30).map(card => (
-                    <div key={card.id} className="p-3 border-b last:border-b-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <div className={`w-3 h-3 rounded-full mr-2 ${
-                            card.band.band === 'severe' ? 'bg-red-500' : 
-                            card.band.band === 'bad' ? 'bg-orange-500' : 'bg-yellow-500'
-                          }`}></div>
-                          <span className="font-medium text-sm">{card.name}</span>
-                        </div>
-                        <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
-                          {card.utilization}% - {card.band.band.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-2">{card.officialName}</div>
-                      <Progress value={card.utilization} className="h-1 mb-2" />
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-muted-foreground">Balance:</span>
-                          <div className="font-medium">{formatCurrency(card.balance)}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Limit:</span>
-                          <div className="font-medium">{formatCurrency(card.limit)}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Statement Close:</span>
-                          <div className="font-medium">{formatDate(card.closeDate)}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Days Until Close:</span>
-                          <div className={`font-medium ${card.daysUntilClose <= 3 ? 'text-red-600' : 'text-green-600'}`}>
-                            {card.daysUntilClose} days
-                          </div>
-                        </div>
-                      </div>
-                      {card.paydownAmount > 0 && (
-                        <div className={`mt-2 p-2 rounded text-xs ${
-                          card.band.band === 'severe' ? 'bg-red-50' : 
-                          card.band.band === 'bad' ? 'bg-orange-50' : 'bg-yellow-50'
-                        }`}>
-                          <span className={`font-medium ${
-                            card.band.band === 'severe' ? 'text-red-700' : 
-                            card.band.band === 'bad' ? 'text-orange-700' : 'text-yellow-700'
-                          }`}>
-                            RECOMMENDED: Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to achieve 9% utilization
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {creditCards?.filter(card => card.utilization >= 30).length === 0 && (
-                    <div className="p-3 text-center text-muted-foreground text-sm">No cards need attention</div>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div 
+                className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
+                onClick={() => setAttentionCardsExpanded(!attentionCardsExpanded)}
+              >
+                <div className="text-2xl font-bold text-orange-600">
+                  {creditCards?.filter(card => card.utilization >= 30).length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Above 30% utilization {attentionCardsExpanded ? '▲' : '▼'}
+                </p>
+              </div>
             </CardContent>
           </Card>
 
