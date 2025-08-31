@@ -91,7 +91,7 @@ export default function UtilizationPilot() {
     }
   };
 
-  const { open: openPlaidLink, ready } = usePlaidLink({
+  const plaidConfig = {
     token: linkToken,
     onSuccess: async (public_token, metadata) => {
       console.log('Plaid Link success, public_token:', public_token);
@@ -129,7 +129,10 @@ export default function UtilizationPilot() {
         setError('Account linking was cancelled or failed');
       }
     },
-  });
+    env: process.env.NEXT_PUBLIC_PLAID_ENV,
+  };
+  
+  const { open: openPlaidLink, ready } = usePlaidLink(plaidConfig);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
