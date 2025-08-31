@@ -729,26 +729,60 @@ export default function UtilizationPilot() {
                     <p className="text-xs text-muted-foreground">Above 30% utilization ▼</p>
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto">
                   {creditCards?.filter(card => card.utilization >= 30).map(card => (
-                    <DropdownMenuItem key={card.id} className="flex items-center justify-between">
-                      <span className="flex items-center">
-                        <div className={`w-2 h-2 rounded-full mr-2 ${
-                          card.band.band === 'severe' ? 'bg-red-500' : 
-                          card.band.band === 'bad' ? 'bg-orange-500' : 'bg-yellow-500'
-                        }`}></div>
-                        {card.name}
-                      </span>
-                      <span className={`text-xs font-medium ${
-                        card.band.band === 'severe' ? 'text-red-600' : 
-                        card.band.band === 'bad' ? 'text-orange-600' : 'text-yellow-600'
-                      }`}>
-                        {card.utilization}%
-                      </span>
-                    </DropdownMenuItem>
+                    <div key={card.id} className="p-3 border-b last:border-b-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className={`w-3 h-3 rounded-full mr-2 ${
+                            card.band.band === 'severe' ? 'bg-red-500' : 
+                            card.band.band === 'bad' ? 'bg-orange-500' : 'bg-yellow-500'
+                          }`}></div>
+                          <span className="font-medium text-sm">{card.name}</span>
+                        </div>
+                        <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
+                          {card.utilization}% - {card.band.band.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-2">{card.officialName}</div>
+                      <Progress value={card.utilization} className="h-1 mb-2" />
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Balance:</span>
+                          <div className="font-medium">{formatCurrency(card.balance)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Limit:</span>
+                          <div className="font-medium">{formatCurrency(card.limit)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Statement Close:</span>
+                          <div className="font-medium">{formatDate(card.closeDate)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Days Until Close:</span>
+                          <div className={`font-medium ${card.daysUntilClose <= 3 ? 'text-red-600' : 'text-green-600'}`}>
+                            {card.daysUntilClose} days
+                          </div>
+                        </div>
+                      </div>
+                      {card.paydownAmount > 0 && (
+                        <div className={`mt-2 p-2 rounded text-xs ${
+                          card.band.band === 'severe' ? 'bg-red-50' : 
+                          card.band.band === 'bad' ? 'bg-orange-50' : 'bg-yellow-50'
+                        }`}>
+                          <span className={`font-medium ${
+                            card.band.band === 'severe' ? 'text-red-700' : 
+                            card.band.band === 'bad' ? 'text-orange-700' : 'text-yellow-700'
+                          }`}>
+                            RECOMMENDED: Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to achieve 9% utilization
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {creditCards?.filter(card => card.utilization >= 30).length === 0 && (
-                    <DropdownMenuItem disabled>No cards need attention</DropdownMenuItem>
+                    <div className="p-3 text-center text-muted-foreground text-sm">No cards need attention</div>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
