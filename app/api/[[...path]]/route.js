@@ -1,15 +1,6 @@
-import { MongoClient } from 'mongodb';
 import { NextResponse } from 'next/server';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
-
-// Initialize MongoDB client
-let client;
-let clientPromise;
-
-if (!client) {
-  client = new MongoClient(process.env.MONGO_URL);
-  clientPromise = client.connect();
-}
+import { createServiceClient, createServerClient } from '@/lib/supabase/server';
 
 // Initialize Plaid client
 const configuration = new Configuration({
@@ -23,12 +14,6 @@ const configuration = new Configuration({
 });
 
 const plaidClient = new PlaidApi(configuration);
-
-// Database helper
-async function getDatabase() {
-  const client = await clientPromise;
-  return client.db(process.env.DB_NAME);
-}
 
 // Utility functions for utilization calculations
 function calculateUtilization(balance, limit) {
@@ -59,7 +44,6 @@ function inferStatementCloseDate(transactions, lastStatementDate) {
   }
   
   // Fallback: assume close date is around same day each month
-  // In production, we'd analyze transaction patterns more sophisticatedly
   const today = new Date();
   const estimatedCloseDay = 15; // Default assumption
   const closeDate = new Date(today.getFullYear(), today.getMonth(), estimatedCloseDay);
@@ -79,25 +63,47 @@ function getDaysUntilClose(closeDate, buffer = 2) {
   return Math.max(0, diffDays - buffer);
 }
 
+// Get authenticated user
+async function getAuthenticatedUser(request) {
+  try {
+    const supabase = createServerClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+      return null;
+    }
+    
+    return user;
+  } catch (error) {
+    console.error('Auth error:', error);
+    return null;
+  }
+}
+
 export async function GET(request, { params }) {
   try {
-    const db = await getDatabase();
     const url = new URL(request.url);
     const path = params.path ? params.path.join('/') : '';
 
-    switch (path) {
-      case 'health':
-        return NextResponse.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    // Health check doesn't require auth
+    if (path === 'health') {
+      return NextResponse.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    }
 
+    // Get authenticated user for all other routes
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = createServiceClient();
+
+    switch (path) {
       case 'link-token':
         try {
-          // Generate a consistent user ID for sandbox testing
-          // In production, this should come from authenticated user session
-          const userId = 'sandbox_user_001';
-          
           const linkTokenRequest = {
             user: {
-              client_user_id: userId,
+              client_user_id: user.id, // Use actual user ID from Supabase auth
             },
             client_name: 'Utilization Pilot',
             products: ['assets', 'transactions'],
@@ -122,8 +128,15 @@ export async function GET(request, { params }) {
 
       case 'accounts':
         try {
-          const accounts = await db.collection('accounts').find({}).toArray();
-          return NextResponse.json(accounts);
+          const { data: accounts, error } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_active', true);
+
+          if (error) throw error;
+
+          return NextResponse.json(accounts || []);
         } catch (error) {
           console.error('Error fetching accounts:', error);
           return NextResponse.json({ error: 'Failed to fetch accounts' }, { status: 500 });
@@ -131,14 +144,17 @@ export async function GET(request, { params }) {
 
       case 'dashboard':
         try {
-          // Get all credit card accounts for the current user
-          const userId = 'sandbox_user_001'; // In production, get from auth session
-          const accounts = await db.collection('accounts').find({ 
-            user_id: userId,
-            subtype: 'credit card' 
-          }).toArray();
+          // Get all credit card accounts for the user
+          const { data: accounts, error } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('subtype', 'credit card')
+            .eq('is_active', true);
 
-          if (accounts.length === 0) {
+          if (error) throw error;
+
+          if (!accounts || accounts.length === 0) {
             return NextResponse.json({
               creditCards: [],
               overallUtilization: 0,
@@ -157,20 +173,20 @@ export async function GET(request, { params }) {
 
           // Calculate utilization for each card
           const creditCards = accounts.map(account => {
-            const balance = account.balances?.current || 0;
-            const limit = account.balances?.limit || 0;
+            const balance = account.current_balance || 0;
+            const limit = account.credit_limit || 0;
             const utilization = calculateUtilization(balance, limit);
             const band = getUtilizationBand(utilization);
             
             // Estimate statement close date
-            const closeDate = inferStatementCloseDate([], account.lastStatementDate);
+            const closeDate = inferStatementCloseDate([], account.last_statement_date);
             const daysUntilClose = getDaysUntilClose(closeDate);
             
             // Calculate payment recommendation
-            const paydownAmount = calculatePaydownAmount(balance, limit, 0.09);
+            const paydownAmount = calculatePaydownAmount(balance, limit, account.target_utilization || 0.09);
             
             return {
-              id: account.account_id,
+              id: account.id,
               name: account.name,
               officialName: account.official_name,
               balance: balance,
@@ -180,7 +196,7 @@ export async function GET(request, { params }) {
               closeDate: closeDate.toISOString(),
               daysUntilClose: daysUntilClose,
               paydownAmount: paydownAmount,
-              lastUpdated: account.lastUpdated || new Date().toISOString()
+              lastUpdated: account.updated_at
             };
           });
 
@@ -227,6 +243,22 @@ export async function GET(request, { params }) {
           return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
         }
 
+      case 'user-profile':
+        try {
+          const { data: profile, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') throw error;
+
+          return NextResponse.json(profile || { id: user.id, email: user.email });
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          return NextResponse.json({ error: 'Failed to fetch user profile' }, { status: 500 });
+        }
+
       default:
         return NextResponse.json({ error: 'Route not found' }, { status: 404 });
     }
@@ -238,10 +270,17 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const db = await getDatabase();
     const url = new URL(request.url);
     const path = params.path ? params.path.join('/') : '';
     const body = await request.json();
+
+    // Get authenticated user
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = createServiceClient();
 
     switch (path) {
       case 'exchange-token':
@@ -252,7 +291,7 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: 'Missing public_token' }, { status: 400 });
           }
           
-          console.log('Exchanging public token for access token...');
+          console.log('Exchanging public token for user:', user.id);
           
           // Exchange public token for access token
           const tokenResponse = await plaidClient.itemPublicTokenExchange({
@@ -271,48 +310,94 @@ export async function POST(request, { params }) {
 
           const accounts = accountsResponse.data.accounts;
 
-          // Store accounts in database with user association
-          const userId = 'sandbox_user_001'; // In production, get from auth session
-          
-          for (const account of accounts) {
-            await db.collection('accounts').updateOne(
-              { 
-                account_id: account.account_id,
-                user_id: userId // Associate with user
-              },
-              {
-                $set: {
-                  ...account,
-                  user_id: userId,
-                  access_token: accessToken,
-                  item_id: itemId,
-                  lastUpdated: new Date().toISOString(),
-                  // Try to get last statement date from account metadata
-                  lastStatementDate: null, // Will be refined over time
-                  // Add sandbox-specific fields for testing
-                  is_sandbox: process.env.PLAID_ENV === 'sandbox'
-                }
-              },
-              { upsert: true }
-            );
-          }
+          // Store Plaid item
+          const { data: plaidItem, error: itemError } = await supabase
+            .from('plaid_items')
+            .upsert({
+              user_id: user.id,
+              item_id: itemId,
+              access_token: accessToken, // In production, encrypt this
+              institution_id: metadata?.institution?.institution_id,
+              institution_name: metadata?.institution?.name,
+              is_active: true,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id,item_id'
+            })
+            .select()
+            .single();
 
-          // Get initial transactions to help infer statement cycles
+          if (itemError) throw itemError;
+
+          // Store accounts in database
+          const accountInserts = accounts.map(account => ({
+            user_id: user.id,
+            plaid_item_id: plaidItem.id,
+            account_id: account.account_id,
+            name: account.name,
+            official_name: account.official_name,
+            type: account.type,
+            subtype: account.subtype,
+            current_balance: account.balances.current || 0,
+            available_balance: account.balances.available,
+            credit_limit: account.balances.limit,
+            target_utilization: 0.09, // Default 9%
+            is_active: true,
+            updated_at: new Date().toISOString()
+          }));
+
+          const { data: insertedAccounts, error: accountsError } = await supabase
+            .from('accounts')
+            .upsert(accountInserts, {
+              onConflict: 'user_id,account_id'
+            });
+
+          if (accountsError) throw accountsError;
+
+          // Get initial transactions for statement cycle analysis
           try {
             const transactionsResponse = await plaidClient.transactionsGet({
               access_token: accessToken,
-              start_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days ago
+              start_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
               end_date: new Date().toISOString().split('T')[0],
             });
 
-            // Store transactions for statement cycle analysis
-            await db.collection('transactions').insertMany(
-              transactionsResponse.data.transactions.map(tx => ({
+            // Store transactions
+            if (transactionsResponse.data.transactions.length > 0) {
+              const transactionInserts = transactionsResponse.data.transactions.map(tx => ({
+                user_id: user.id,
+                account_id: accounts.find(acc => acc.account_id === tx.account_id)?.account_id,
+                transaction_id: tx.transaction_id,
+                amount: tx.amount,
+                date: tx.date,
+                name: tx.name,
+                merchant_name: tx.merchant_name,
+                category: tx.category,
+                is_pending: tx.pending
+              })).filter(tx => tx.account_id); // Only include transactions for accounts we have
+
+              // Find the corresponding account UUIDs
+              const { data: accountsData } = await supabase
+                .from('accounts')
+                .select('id, account_id')
+                .eq('user_id', user.id);
+
+              const accountMap = accountsData.reduce((map, acc) => {
+                map[acc.account_id] = acc.id;
+                return map;
+              }, {});
+
+              const finalTransactionInserts = transactionInserts.map(tx => ({
                 ...tx,
-                access_token: accessToken,
-                lastUpdated: new Date().toISOString()
-              }))
-            );
+                account_id: accountMap[tx.account_id]
+              })).filter(tx => tx.account_id);
+
+              await supabase
+                .from('transactions')
+                .upsert(finalTransactionInserts, {
+                  onConflict: 'user_id,transaction_id'
+                });
+            }
           } catch (transactionError) {
             console.warn('Could not fetch transactions:', transactionError);
           }
@@ -330,38 +415,43 @@ export async function POST(request, { params }) {
 
       case 'refresh-accounts':
         try {
-          const accounts = await db.collection('accounts').find({}).toArray();
+          // Get all active Plaid items for the user
+          const { data: plaidItems, error: itemsError } = await supabase
+            .from('plaid_items')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_active', true);
+
+          if (itemsError) throw itemsError;
+
           let updatedCount = 0;
 
-          for (const account of accounts) {
-            if (account.access_token) {
-              try {
-                const accountsResponse = await plaidClient.accountsGet({
-                  access_token: account.access_token,
-                });
+          for (const item of plaidItems) {
+            try {
+              const accountsResponse = await plaidClient.accountsGet({
+                access_token: item.access_token,
+              });
 
-                const updatedAccount = accountsResponse.data.accounts.find(
-                  acc => acc.account_id === account.account_id
-                );
+              const accounts = accountsResponse.data.accounts;
 
-                if (updatedAccount) {
-                  await db.collection('accounts').updateOne(
-                    { account_id: account.account_id },
-                    {
-                      $set: {
-                        ...updatedAccount,
-                        access_token: account.access_token,
-                        item_id: account.item_id,
-                        lastUpdated: new Date().toISOString(),
-                        lastStatementDate: account.lastStatementDate
-                      }
-                    }
-                  );
+              for (const account of accounts) {
+                const { error: updateError } = await supabase
+                  .from('accounts')
+                  .update({
+                    current_balance: account.balances.current || 0,
+                    available_balance: account.balances.available,
+                    credit_limit: account.balances.limit,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('user_id', user.id)
+                  .eq('account_id', account.account_id);
+
+                if (!updateError) {
                   updatedCount++;
                 }
-              } catch (error) {
-                console.warn(`Failed to update account ${account.account_id}:`, error);
               }
+            } catch (error) {
+              console.warn(`Failed to update accounts for item ${item.item_id}:`, error);
             }
           }
 
@@ -378,19 +468,26 @@ export async function POST(request, { params }) {
 
       case 'update-targets':
         try {
-          const { cardId, target, monthlyLimit } = body;
+          const { accountId, target, monthlyLimit } = body;
           
-          await db.collection('user_settings').updateOne(
-            { userId: 'default' }, // In a real app, use actual user ID
-            {
-              $set: {
-                [`cardTargets.${cardId}`]: target,
-                monthlyLimit: monthlyLimit,
-                lastUpdated: new Date().toISOString()
-              }
-            },
-            { upsert: true }
-          );
+          if (accountId && target !== undefined) {
+            const { error: accountError } = await supabase
+              .from('accounts')
+              .update({ target_utilization: target })
+              .eq('user_id', user.id)
+              .eq('id', accountId);
+
+            if (accountError) throw accountError;
+          }
+
+          if (monthlyLimit !== undefined) {
+            const { error: profileError } = await supabase
+              .from('user_profiles')
+              .update({ monthly_paydown_limit: monthlyLimit })
+              .eq('id', user.id);
+
+            if (profileError) throw profileError;
+          }
 
           return NextResponse.json({ success: true });
         } catch (error) {

@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { usePlaidLink } from 'react-plaid-link';
+import { createClient } from '@/lib/supabase/client';
 import { 
   CreditCard, 
   TrendingUp, 
@@ -18,9 +20,11 @@ import {
   Calendar,
   DollarSign,
   Target,
-  Zap
+  Zap,
+  LogIn,
+  LogOut,
+  User
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = {
   excellent: '#10b981', // green
@@ -31,121 +35,139 @@ const COLORS = {
 };
 
 export default function UtilizationPilot() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [email, setEmail] = useState('');
   const [linkToken, setLinkToken] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [dataLoaded, setDataLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Initialize app data on mount
+  const supabase = createClient();
+
+  // Initialize app and check auth status
   useEffect(() => {
     let mounted = true;
     
-    // Failsafe timeout to prevent hanging
-    const failsafeTimeout = setTimeout(() => {
-      if (mounted) {
-        console.log('Failsafe timeout: setting loading to false');
-        setLoading(false);
-      }
-    }, 5000);
-    
     const initializeApp = async () => {
       try {
-        console.log('Initializing Utilization Pilot...');
+        console.log('Initializing Utilization Pilot with Supabase...');
         
-        // Fetch dashboard data and link token in parallel
-        const [dashboardResponse, linkTokenResponse] = await Promise.all([
-          fetch('/api/dashboard'),
-          fetch('/api/link-token')
-        ]);
+        // Check initial auth state
+        const { data: { user: initialUser } } = await supabase.auth.getUser();
         
-        // Process dashboard data
-        if (dashboardResponse.ok && mounted) {
-          const dashboardData = await dashboardResponse.json();
-          console.log('Dashboard initialized:', dashboardData);
-          setDashboardData(dashboardData);
-        } else if (mounted) {
-          console.error('Dashboard fetch failed:', dashboardResponse.status);
-          setError('Failed to load dashboard');
-        }
-        
-        // Process link token
-        if (linkTokenResponse.ok && mounted) {
-          const linkData = await linkTokenResponse.json();
-          if (linkData.link_token) {
-            console.log('Plaid Link token received:', linkData.link_token.substring(0, 20) + '...');
-            setLinkToken(linkData.link_token);
+        if (mounted) {
+          setUser(initialUser);
+          
+          if (initialUser) {
+            console.log('User authenticated:', initialUser.email);
+            await loadUserData();
           } else {
-            console.error('No link_token in response:', linkData);
-            setError('Failed to get Plaid link token');
+            console.log('No authenticated user');
+            setLoading(false);
           }
-        } else if (mounted) {
-          console.error('Link token fetch failed:', linkTokenResponse.status);
-          setError('Failed to initialize Plaid integration');
         }
-        
       } catch (error) {
         console.error('App initialization error:', error);
         if (mounted) {
           setError('Failed to initialize app');
-        }
-      } finally {
-        clearTimeout(failsafeTimeout);
-        if (mounted) {
           setLoading(false);
-          console.log('App initialization complete');
         }
       }
     };
+    
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
+      if (mounted) {
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await loadUserData();
+        } else {
+          setDashboardData(null);
+          setLinkToken(null);
+          setLoading(false);
+        }
+      }
+    });
     
     initializeApp();
     
     return () => {
       mounted = false;
-      clearTimeout(failsafeTimeout);
+      subscription?.unsubscribe();
     };
   }, []);
 
-  const fetchLinkToken = async () => {
+  const loadUserData = async () => {
     try {
-      console.log('Fetching link token...');
-      const response = await fetch('/api/link-token');
+      console.log('Loading user data...');
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Load dashboard and link token in parallel
+      const [dashboardResponse, linkTokenResponse] = await Promise.all([
+        fetch('/api/dashboard'),
+        fetch('/api/link-token')
+      ]);
       
-      const data = await response.json();
-      console.log('Link token response:', data);
-      
-      if (data.link_token) {
-        setLinkToken(data.link_token);
+      if (dashboardResponse.ok) {
+        const dashboardData = await dashboardResponse.json();
+        console.log('Dashboard loaded:', dashboardData);
+        setDashboardData(dashboardData);
       } else {
-        console.error('No link_token in response');
+        console.error('Dashboard fetch failed:', dashboardResponse.status);
       }
+      
+      if (linkTokenResponse.ok) {
+        const linkData = await linkTokenResponse.json();
+        if (linkData.link_token) {
+          console.log('Plaid Link token ready');
+          setLinkToken(linkData.link_token);
+        }
+      } else {
+        console.error('Link token fetch failed:', linkTokenResponse.status);
+      }
+      
     } catch (error) {
-      console.error('Error fetching link token:', error);
+      console.error('Error loading user data:', error);
+      setError('Failed to load user data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchDashboard = async () => {
+  const signInWithEmail = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch('/api/dashboard');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Dashboard data:', data); // Debug log
-      setDashboardData(data);
-      setError(null);
-      setLoading(false); // Set loading to false only after successful data fetch
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+
+      alert('Check your email for the magic link!');
     } catch (error) {
-      console.error('Error fetching dashboard:', error);
-      setError('Failed to load dashboard data');
-      setLoading(false); // Also set loading to false on error
+      console.error('Sign in error:', error);
+      setError(error.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Sign out error:', error);
     }
   };
 
@@ -155,7 +177,7 @@ export default function UtilizationPilot() {
       const response = await fetch('/api/refresh-accounts', { method: 'POST' });
       const data = await response.json();
       if (data.success) {
-        await fetchDashboard();
+        await loadUserData();
       }
     } catch (error) {
       console.error('Error refreshing accounts:', error);
@@ -172,7 +194,7 @@ export default function UtilizationPilot() {
       
       try {
         setLoading(true);
-        setError(null); // Clear any previous errors
+        setError(null);
         
         const response = await fetch('/api/exchange-token', {
           method: 'POST',
@@ -194,9 +216,7 @@ export default function UtilizationPilot() {
         console.log('Account linking successful:', data);
         
         if (data.success) {
-          // Refresh dashboard to show new accounts
-          await fetchDashboard();
-          // Show success message
+          await loadUserData();
           console.log(`Successfully linked ${data.accounts} accounts!`);
         } else {
           setError('Failed to save account information');
@@ -211,7 +231,6 @@ export default function UtilizationPilot() {
     onExit: (err, metadata) => {
       if (err) {
         console.error('Plaid Link error:', err);
-        // Don't show error if user just cancelled
         if (err.error_code !== 'USER_CANCELLED') {
           setError('Account linking failed. Please try again.');
         }
@@ -219,7 +238,6 @@ export default function UtilizationPilot() {
         console.log('User exited Plaid Link');
       }
     },
-    // Ensure sandbox environment is used
     env: 'sandbox',
   };
   
@@ -244,7 +262,7 @@ export default function UtilizationPilot() {
     return COLORS[band] || '#6b7280';
   };
 
-  // Fixed loading logic - only show loading for first 2 seconds max
+  // Show loading screen
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -256,14 +274,14 @@ export default function UtilizationPilot() {
     );
   }
 
-  // Show onboarding if we don't have dashboard data or have no credit cards
-  if (!dashboardData || !dashboardData.creditCards || dashboardData.creditCards.length === 0) {
+  // Show authentication screen if not logged in
+  if (!user) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center max-w-2xl mx-auto">
             <div className="mb-8">
-              <CreditCard className="h-16 w-16 mx-auto mb-4 text-primary" />
+              <Zap className="h-16 w-16 mx-auto mb-4 text-primary" />
               <h1 className="text-4xl font-bold mb-2">Utilization Pilot</h1>
               <p className="text-xl text-muted-foreground mb-8">
                 Time your payments to what credit models actually see
@@ -280,9 +298,105 @@ export default function UtilizationPilot() {
 
             <Card className="mb-8">
               <CardHeader>
-                <CardTitle>Get Started</CardTitle>
+                <CardTitle className="flex items-center justify-center">
+                  <LogIn className="mr-2 h-5 w-5" />
+                  Sign In to Get Started
+                </CardTitle>
                 <CardDescription>
-                  Connect your credit cards and checking account to start optimizing your credit utilization
+                  Get personalized credit utilization tracking and payment recommendations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={signInWithEmail} className="space-y-4">
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={authLoading}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {authLoading ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Sending Magic Link...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Send Magic Link
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <div className="text-left space-y-4">
+              <h3 className="text-lg font-semibold">How It Works</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <Calendar className="h-8 w-8 text-blue-500 mb-2" />
+                  <h4 className="font-medium mb-1">Statement Close Tracking</h4>
+                  <p className="text-sm text-muted-foreground">
+                    We track when your credit cards report to bureaus (statement close dates), not just payment due dates.
+                  </p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <Target className="h-8 w-8 text-green-500 mb-2" />
+                  <h4 className="font-medium mb-1">Utilization Optimization</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Get alerts to make small pre-close payments that keep your reported balances in healthy bands (0-9%).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show onboarding if user has no credit cards connected
+  if (dashboardData && (!dashboardData.creditCards || dashboardData.creditCards.length === 0)) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header with user info */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <Zap className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-2xl font-bold">Utilization Pilot</h1>
+                <p className="text-sm text-muted-foreground">Welcome, {user.email}!</p>
+              </div>
+            </div>
+            <Button onClick={signOut} variant="outline" size="sm">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+
+          <div className="text-center max-w-2xl mx-auto">
+            {error && (
+              <Alert className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Connect Your Accounts</CardTitle>
+                <CardDescription>
+                  Link your credit cards and checking account to start optimizing your credit utilization
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -317,57 +431,37 @@ export default function UtilizationPilot() {
                 </Button>
               </CardContent>
             </Card>
-
-            <div className="text-left space-y-4">
-              <h3 className="text-lg font-semibold">How It Works</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="p-4 border rounded-lg">
-                  <Calendar className="h-8 w-8 text-blue-500 mb-2" />
-                  <h4 className="font-medium mb-1">Statement Close Tracking</h4>
-                  <p className="text-sm text-muted-foreground">
-                    We track when your credit cards report to bureaus (statement close dates), not just payment due dates.
-                  </p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <Target className="h-8 w-8 text-green-500 mb-2" />
-                  <h4 className="font-medium mb-1">Utilization Optimization</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Get alerts to make small pre-close payments that keep your reported balances in healthy bands (0-9%).
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  const { 
-    creditCards = [], 
-    overallUtilization = 0, 
-    totalLimit = 0, 
-    totalBalance = 0, 
-    recommendations = [], 
-    summary = {} 
-  } = dashboardData || {};
+  // Main dashboard with credit card data
+  const { creditCards, overallUtilization, totalLimit, totalBalance, recommendations, summary } = dashboardData || {};
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center">
-              <Zap className="mr-3 h-8 w-8 text-primary" />
-              Utilization Pilot
-            </h1>
-            <p className="text-muted-foreground">Credit utilization optimization dashboard</p>
+          <div className="flex items-center space-x-4">
+            <Zap className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Utilization Pilot</h1>
+              <p className="text-muted-foreground">Credit utilization optimization dashboard</p>
+            </div>
           </div>
-          <Button onClick={refreshAccounts} disabled={refreshing} variant="outline">
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh Data
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button onClick={refreshAccounts} disabled={refreshing} variant="outline">
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
+            <Button onClick={signOut} variant="outline" size="sm">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         {error && (
@@ -379,7 +473,7 @@ export default function UtilizationPilot() {
         )}
 
         {/* Priority Recommendations */}
-        {recommendations.length > 0 && (
+        {recommendations && recommendations.length > 0 && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Urgent Recommendations</AlertTitle>
@@ -418,7 +512,7 @@ export default function UtilizationPilot() {
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{summary.excellentCards}</div>
+              <div className="text-2xl font-bold text-green-600">{summary?.excellentCards || 0}</div>
               <p className="text-xs text-muted-foreground">0-9% utilization</p>
             </CardContent>
           </Card>
@@ -430,7 +524,7 @@ export default function UtilizationPilot() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">
-                {summary.warningCards + summary.badCards + summary.severeCards}
+                {(summary?.warningCards || 0) + (summary?.badCards || 0) + (summary?.severeCards || 0)}
               </div>
               <p className="text-xs text-muted-foreground">Above 30% utilization</p>
             </CardContent>
@@ -457,7 +551,7 @@ export default function UtilizationPilot() {
 
           <TabsContent value="cards" className="space-y-6">
             <div className="grid gap-6">
-              {creditCards.map((card) => (
+              {creditCards && creditCards.map((card) => (
                 <Card key={card.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -487,9 +581,6 @@ export default function UtilizationPilot() {
                       <Progress 
                         value={card.utilization} 
                         className="h-2"
-                        style={{ 
-                          backgroundColor: '#f1f5f9',
-                        }}
                       />
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
@@ -538,7 +629,7 @@ export default function UtilizationPilot() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {recommendations.length === 0 ? (
+                {!recommendations || recommendations.length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">All Set!</h3>
@@ -606,23 +697,23 @@ export default function UtilizationPilot() {
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-4 h-4 bg-green-500 rounded"></div>
-                      <span className="text-sm">Excellent (0-9%): {summary.excellentCards} cards</span>
+                      <span className="text-sm">Excellent (0-9%): {summary?.excellentCards || 0} cards</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                      <span className="text-sm">Good (10-29%): {summary.goodCards} cards</span>
+                      <span className="text-sm">Good (10-29%): {summary?.goodCards || 0} cards</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                      <span className="text-sm">Warning (30-49%): {summary.warningCards} cards</span>
+                      <span className="text-sm">Warning (30-49%): {summary?.warningCards || 0} cards</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="w-4 h-4 bg-orange-500 rounded"></div>
-                      <span className="text-sm">Bad (50-74%): {summary.badCards} cards</span>
+                      <span className="text-sm">Bad (50-74%): {summary?.badCards || 0} cards</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="w-4 h-4 bg-red-500 rounded"></div>
-                      <span className="text-sm">Severe (75-100%): {summary.severeCards} cards</span>
+                      <span className="text-sm">Severe (75-100%): {summary?.severeCards || 0} cards</span>
                     </div>
                   </div>
                 </CardContent>
@@ -637,17 +728,17 @@ export default function UtilizationPilot() {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Total Cards</span>
-                      <span className="font-medium">{creditCards.length}</span>
+                      <span className="font-medium">{creditCards?.length || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Average Utilization</span>
                       <span className="font-medium">
-                        {Math.round(creditCards.reduce((sum, card) => sum + card.utilization, 0) / creditCards.length)}%
+                        {creditCards?.length ? Math.round(creditCards.reduce((sum, card) => sum + card.utilization, 0) / creditCards.length) : 0}%
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Cards Needing Action</span>
-                      <span className="font-medium text-orange-600">{recommendations.length}</span>
+                      <span className="font-medium text-orange-600">{recommendations?.length || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Total Available Credit</span>
