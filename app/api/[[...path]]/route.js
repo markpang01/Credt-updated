@@ -131,8 +131,10 @@ export async function GET(request, { params }) {
 
       case 'dashboard':
         try {
-          // Get all credit card accounts
+          // Get all credit card accounts for the current user
+          const userId = 'sandbox_user_001'; // In production, get from auth session
           const accounts = await db.collection('accounts').find({ 
+            user_id: userId,
             subtype: 'credit card' 
           }).toArray();
 
