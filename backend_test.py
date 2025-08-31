@@ -17,8 +17,8 @@ load_dotenv()
 
 class UtilizationPilotTester:
     def __init__(self):
-        # Get base URL from environment
-        self.base_url = os.getenv('NEXT_PUBLIC_BASE_URL', 'https://plaid-dashboard.preview.emergentagent.com')
+        # Use local server for testing since we're in the same container
+        self.base_url = "http://localhost:3000"
         self.api_base = f"{self.base_url}/api"
         self.test_results = []
         
