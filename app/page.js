@@ -699,6 +699,79 @@ export default function UtilizationPilot() {
           </Card>
         </div>
 
+        {/* Expandable Healthy Cards Section */}
+        {healthyCardsExpanded && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Healthy Cards (Under 30% Utilization)</h3>
+            <div className="space-y-4">
+              {creditCards?.filter(card => card.utilization < 30).map((card, index) => (
+                <div key={card.id} className="flex items-center justify-between bg-white/50 rounded-md px-4 py-3 border">
+                  <div className="flex items-center space-x-4">
+                    <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
+                      {card.band.band.toUpperCase()}
+                    </Badge>
+                    <div>
+                      <div className="font-medium text-sm">{card.name}</div>
+                      <div className="text-xs text-muted-foreground">{card.officialName}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {card.utilization}% • {formatCurrency(card.balance)} / {formatCurrency(card.limit)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">Statement Close</div>
+                    <div className="text-xs text-muted-foreground">{formatDate(card.closeDate)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Expandable Cards Need Attention Section */}
+        {attentionCardsExpanded && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-4">Cards Need Attention (Above 30% Utilization)</h3>
+            <div className="space-y-4">
+              {creditCards?.filter(card => card.utilization >= 30).map((card, index) => (
+                <div key={card.id} className="bg-white/50 rounded-md px-4 py-3 border">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-4">
+                      <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
+                        {card.band.band.toUpperCase()}
+                      </Badge>
+                      <div>
+                        <div className="font-medium text-sm">{card.name}</div>
+                        <div className="text-xs text-muted-foreground">{card.officialName}</div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {card.utilization}% • {formatCurrency(card.balance)} / {formatCurrency(card.limit)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">Statement Close</div>
+                      <div className="text-xs text-muted-foreground">{formatDate(card.closeDate)}</div>
+                    </div>
+                  </div>
+                  {card.paydownAmount > 0 && (
+                    <div className={`mt-2 p-2 rounded text-xs ${
+                      card.band.band === 'severe' ? 'bg-red-50' : 
+                      card.band.band === 'bad' ? 'bg-orange-50' : 'bg-yellow-50'
+                    }`}>
+                      <span className={`font-medium ${
+                        card.band.band === 'severe' ? 'text-red-700' : 
+                        card.band.band === 'bad' ? 'text-orange-700' : 'text-yellow-700'
+                      }`}>
+                        💰 RECOMMENDED: Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to achieve 9% utilization
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Tabs defaultValue="recommendations" className="space-y-6">
           <TabsList>
             <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
