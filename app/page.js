@@ -145,13 +145,23 @@ export default function UtilizationPilot() {
   const plaidConfig = {
     token: linkToken,
     onSuccess: async (public_token, metadata) => {
-      console.log('Plaid Link success, public_token:', public_token);
+      console.log('Plaid Link success! Connected accounts:', metadata.accounts.length);
+      console.log('Institution:', metadata.institution.name);
+      
       try {
         setLoading(true);
+        setError(null); // Clear any previous errors
+        
         const response = await fetch('/api/exchange-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ public_token }),
+          body: JSON.stringify({ 
+            public_token,
+            metadata: {
+              institution: metadata.institution,
+              accounts: metadata.accounts
+            }
+          }),
         });
         
         if (!response.ok) {
@@ -159,28 +169,36 @@ export default function UtilizationPilot() {
         }
         
         const data = await response.json();
-        console.log('Exchange token response:', data);
+        console.log('Account linking successful:', data);
         
         if (data.success) {
+          // Refresh dashboard to show new accounts
           await fetchDashboard();
+          // Show success message
+          console.log(`Successfully linked ${data.accounts} accounts!`);
         } else {
-          setError('Failed to exchange token');
+          setError('Failed to save account information');
         }
       } catch (error) {
         console.error('Error exchanging token:', error);
-        setError('Failed to link accounts');
+        setError('Failed to link accounts. Please try again.');
       } finally {
         setLoading(false);
       }
     },
     onExit: (err, metadata) => {
-      console.log('Plaid Link exit:', err, metadata);
       if (err) {
         console.error('Plaid Link error:', err);
-        setError('Account linking was cancelled or failed');
+        // Don't show error if user just cancelled
+        if (err.error_code !== 'USER_CANCELLED') {
+          setError('Account linking failed. Please try again.');
+        }
+      } else {
+        console.log('User exited Plaid Link');
       }
     },
-    env: process.env.NEXT_PUBLIC_PLAID_ENV,
+    // Ensure sandbox environment is used
+    env: 'sandbox',
   };
   
   const { open: openPlaidLink, ready } = usePlaidLink(plaidConfig);
