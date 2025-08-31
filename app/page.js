@@ -64,8 +64,11 @@ export default function UtilizationPilot() {
         if (linkTokenResponse.ok) {
           const linkData = await linkTokenResponse.json();
           if (linkData.link_token) {
-            console.log('Plaid Link token ready');
+            console.log('Plaid Link token received:', linkData.link_token.substring(0, 20) + '...');
             setLinkToken(linkData.link_token);
+          } else {
+            console.error('No link_token in response:', linkData);
+            setError('Failed to get Plaid link token');
           }
         } else {
           console.error('Link token fetch failed:', linkTokenResponse.status);
