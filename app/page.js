@@ -41,62 +41,56 @@ export default function UtilizationPilot() {
   useEffect(() => {
     let mounted = true;
     
-    const initializeApp = async () => {
-      try {
-        console.log('Initializing app...');
-        
-        // Add timeout to prevent hanging
-        const timeoutId = setTimeout(() => {
-          if (mounted) {
-            console.log('Initialization timeout - setting loading to false');
-            setLoading(false);
-          }
-        }, 10000);
-        
-        // Fetch both in parallel with timeout
-        const [linkTokenResponse, dashboardResponse] = await Promise.allSettled([
-          fetch('/api/link-token', { signal: AbortSignal.timeout(5000) }),
-          fetch('/api/dashboard', { signal: AbortSignal.timeout(5000) })
-        ]);
-        
-        clearTimeout(timeoutId);
-        
-        // Process link token
-        if (linkTokenResponse.status === 'fulfilled' && linkTokenResponse.value.ok) {
-          const linkData = await linkTokenResponse.value.json();
-          if (mounted && linkData.link_token) {
-            setLinkToken(linkData.link_token);
-            console.log('Link token set successfully');
-          }
-        } else {
-          console.log('Link token fetch failed:', linkTokenResponse.reason || 'Unknown error');
-        }
-        
-        // Process dashboard
-        if (dashboardResponse.status === 'fulfilled' && dashboardResponse.value.ok) {
-          const dashboardData = await dashboardResponse.value.json();
-          if (mounted) {
-            setDashboardData(dashboardData);
-            console.log('Dashboard data loaded:', dashboardData);
-          }
-        } else {
-          console.log('Dashboard fetch failed:', dashboardResponse.reason || 'Unknown error');
-        }
-        
+    const fetchData = async () => {
+      console.log('Starting data fetch...');
+      
+      // Set a max timeout to ensure loading state doesn't hang
+      const maxTimeout = setTimeout(() => {
         if (mounted) {
+          console.log('Max timeout reached - forcing loading to false');
           setLoading(false);
-          console.log('App initialization complete');
+        }
+      }, 8000);
+      
+      try {
+        // Fetch dashboard data
+        const dashboardResponse = await fetch('/api/dashboard');
+        if (dashboardResponse.ok) {
+          const data = await dashboardResponse.json();
+          if (mounted) {
+            console.log('Dashboard data received:', data);
+            setDashboardData(data);
+          }
+        } else {
+          console.error('Dashboard fetch failed:', dashboardResponse.status);
+        }
+        
+        // Fetch link token
+        const linkResponse = await fetch('/api/link-token');
+        if (linkResponse.ok) {
+          const linkData = await linkResponse.json();
+          if (mounted && linkData.link_token) {
+            console.log('Link token received');
+            setLinkToken(linkData.link_token);
+          }
+        } else {
+          console.error('Link token fetch failed:', linkResponse.status);
         }
       } catch (error) {
-        console.error('App initialization failed:', error);
+        console.error('Fetch error:', error);
         if (mounted) {
-          setError('Failed to initialize app');
+          setError('Failed to load data');
+        }
+      } finally {
+        clearTimeout(maxTimeout);
+        if (mounted) {
+          console.log('Setting loading to false');
           setLoading(false);
         }
       }
     };
     
-    initializeApp();
+    fetchData();
     
     return () => {
       mounted = false;
