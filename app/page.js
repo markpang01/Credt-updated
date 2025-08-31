@@ -94,6 +94,7 @@ export default function UtilizationPilot() {
   const { open: openPlaidLink, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: async (public_token, metadata) => {
+      console.log('Plaid Link success, public_token:', public_token);
       try {
         setLoading(true);
         const response = await fetch('/api/exchange-token', {
@@ -102,9 +103,17 @@ export default function UtilizationPilot() {
           body: JSON.stringify({ public_token }),
         });
         
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('Exchange token response:', data);
+        
         if (data.success) {
           await fetchDashboard();
+        } else {
+          setError('Failed to exchange token');
         }
       } catch (error) {
         console.error('Error exchanging token:', error);
@@ -114,6 +123,7 @@ export default function UtilizationPilot() {
       }
     },
     onExit: (err, metadata) => {
+      console.log('Plaid Link exit:', err, metadata);
       if (err) {
         console.error('Plaid Link error:', err);
         setError('Account linking was cancelled or failed');
