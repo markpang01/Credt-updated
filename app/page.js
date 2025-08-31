@@ -33,7 +33,7 @@ const COLORS = {
 export default function UtilizationPilot() {
   const [linkToken, setLinkToken] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
