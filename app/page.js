@@ -678,7 +678,10 @@ export default function UtilizationPilot() {
             <CardContent>
               <div 
                 className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
-                onClick={() => setAttentionCardsExpanded(!attentionCardsExpanded)}
+                onClick={() => {
+                  console.log('Attention cards clicked, current state:', attentionCardsExpanded);
+                  setAttentionCardsExpanded(!attentionCardsExpanded);
+                }}
               >
                 <div className="text-2xl font-bold text-orange-600">
                   {creditCards?.filter(card => card.utilization >= 30).length || 0}
