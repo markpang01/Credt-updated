@@ -40,6 +40,16 @@ export default function UtilizationPilot() {
 
   // Initialize app data on mount
   useEffect(() => {
+    let mounted = true;
+    
+    // Failsafe timeout to prevent hanging
+    const failsafeTimeout = setTimeout(() => {
+      if (mounted) {
+        console.log('Failsafe timeout: setting loading to false');
+        setLoading(false);
+      }
+    }, 5000);
+    
     const initializeApp = async () => {
       try {
         console.log('Initializing Utilization Pilot...');
@@ -51,17 +61,17 @@ export default function UtilizationPilot() {
         ]);
         
         // Process dashboard data
-        if (dashboardResponse.ok) {
+        if (dashboardResponse.ok && mounted) {
           const dashboardData = await dashboardResponse.json();
           console.log('Dashboard initialized:', dashboardData);
           setDashboardData(dashboardData);
-        } else {
+        } else if (mounted) {
           console.error('Dashboard fetch failed:', dashboardResponse.status);
           setError('Failed to load dashboard');
         }
         
         // Process link token
-        if (linkTokenResponse.ok) {
+        if (linkTokenResponse.ok && mounted) {
           const linkData = await linkTokenResponse.json();
           if (linkData.link_token) {
             console.log('Plaid Link token received:', linkData.link_token.substring(0, 20) + '...');
@@ -70,21 +80,31 @@ export default function UtilizationPilot() {
             console.error('No link_token in response:', linkData);
             setError('Failed to get Plaid link token');
           }
-        } else {
+        } else if (mounted) {
           console.error('Link token fetch failed:', linkTokenResponse.status);
           setError('Failed to initialize Plaid integration');
         }
         
       } catch (error) {
         console.error('App initialization error:', error);
-        setError('Failed to initialize app');
+        if (mounted) {
+          setError('Failed to initialize app');
+        }
       } finally {
-        setLoading(false);
-        console.log('App initialization complete');
+        clearTimeout(failsafeTimeout);
+        if (mounted) {
+          setLoading(false);
+          console.log('App initialization complete');
+        }
       }
     };
     
     initializeApp();
+    
+    return () => {
+      mounted = false;
+      clearTimeout(failsafeTimeout);
+    };
   }, []);
 
   const fetchLinkToken = async () => {
