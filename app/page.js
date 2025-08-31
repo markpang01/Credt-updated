@@ -278,13 +278,19 @@ export default function UtilizationPilot() {
                   </div>
                 </div>
                 <Button 
-                  onClick={openPlaidLink} 
-                  disabled={false}
+                  onClick={() => {
+                    if (linkToken && ready) {
+                      openPlaidLink();
+                    } else {
+                      console.log('Plaid Link not ready yet. Token:', !!linkToken, 'Ready:', ready);
+                    }
+                  }}
+                  disabled={!linkToken || !ready}
                   className="w-full"
                   size="lg"
                 >
                   <CreditCard className="mr-2 h-5 w-5" />
-                  Connect Your Accounts
+                  {!linkToken ? 'Loading...' : 'Connect Your Accounts'}
                 </Button>
               </CardContent>
             </Card>
