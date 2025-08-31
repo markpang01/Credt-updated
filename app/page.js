@@ -38,51 +38,50 @@ export default function UtilizationPilot() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Force loading to false after a short delay to prevent hanging
+  // Initialize app data on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log('Forcing loading to false after 2 seconds');
-      setLoading(false);
-      setDataLoaded(true);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Fetch data in parallel
-  useEffect(() => {
-    const fetchData = async () => {
+    const initializeApp = async () => {
       try {
-        console.log('Fetching dashboard data...');
-        const dashboardResponse = await fetch('/api/dashboard');
+        console.log('Initializing Utilization Pilot...');
+        
+        // Fetch dashboard data and link token in parallel
+        const [dashboardResponse, linkTokenResponse] = await Promise.all([
+          fetch('/api/dashboard'),
+          fetch('/api/link-token')
+        ]);
+        
+        // Process dashboard data
         if (dashboardResponse.ok) {
-          const data = await dashboardResponse.json();
-          console.log('Dashboard data loaded:', data);
-          setDashboardData(data);
+          const dashboardData = await dashboardResponse.json();
+          console.log('Dashboard initialized:', dashboardData);
+          setDashboardData(dashboardData);
+        } else {
+          console.error('Dashboard fetch failed:', dashboardResponse.status);
+          setError('Failed to load dashboard');
         }
-      } catch (error) {
-        console.error('Dashboard fetch error:', error);
-      }
-    };
-    
-    const fetchLinkToken = async () => {
-      try {
-        console.log('Fetching link token...');
-        const response = await fetch('/api/link-token');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.link_token) {
-            console.log('Link token loaded');
-            setLinkToken(data.link_token);
+        
+        // Process link token
+        if (linkTokenResponse.ok) {
+          const linkData = await linkTokenResponse.json();
+          if (linkData.link_token) {
+            console.log('Plaid Link token ready');
+            setLinkToken(linkData.link_token);
           }
+        } else {
+          console.error('Link token fetch failed:', linkTokenResponse.status);
+          setError('Failed to initialize Plaid integration');
         }
+        
       } catch (error) {
-        console.error('Link token fetch error:', error);
+        console.error('App initialization error:', error);
+        setError('Failed to initialize app');
+      } finally {
+        setLoading(false);
+        console.log('App initialization complete');
       }
     };
     
-    fetchData();
-    fetchLinkToken();
+    initializeApp();
   }, []);
 
   const fetchLinkToken = async () => {
