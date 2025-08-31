@@ -60,7 +60,6 @@ export default function UtilizationPilot() {
 
   const fetchDashboard = async () => {
     try {
-      setLoading(true);
       const response = await fetch('/api/dashboard');
       
       if (!response.ok) {
@@ -71,11 +70,11 @@ export default function UtilizationPilot() {
       console.log('Dashboard data:', data); // Debug log
       setDashboardData(data);
       setError(null);
+      setLoading(false); // Set loading to false only after successful data fetch
     } catch (error) {
       console.error('Error fetching dashboard:', error);
       setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Also set loading to false on error
     }
   };
 
