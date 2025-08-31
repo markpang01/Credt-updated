@@ -45,27 +45,42 @@ export default function UtilizationPilot() {
       try {
         console.log('Initializing app...');
         
-        // Fetch both in parallel
-        const [linkTokenResponse, dashboardResponse] = await Promise.all([
-          fetch('/api/link-token'),
-          fetch('/api/dashboard')
+        // Add timeout to prevent hanging
+        const timeoutId = setTimeout(() => {
+          if (mounted) {
+            console.log('Initialization timeout - setting loading to false');
+            setLoading(false);
+          }
+        }, 10000);
+        
+        // Fetch both in parallel with timeout
+        const [linkTokenResponse, dashboardResponse] = await Promise.allSettled([
+          fetch('/api/link-token', { signal: AbortSignal.timeout(5000) }),
+          fetch('/api/dashboard', { signal: AbortSignal.timeout(5000) })
         ]);
         
+        clearTimeout(timeoutId);
+        
         // Process link token
-        if (linkTokenResponse.ok) {
-          const linkData = await linkTokenResponse.json();
+        if (linkTokenResponse.status === 'fulfilled' && linkTokenResponse.value.ok) {
+          const linkData = await linkTokenResponse.value.json();
           if (mounted && linkData.link_token) {
             setLinkToken(linkData.link_token);
+            console.log('Link token set successfully');
           }
+        } else {
+          console.log('Link token fetch failed:', linkTokenResponse.reason || 'Unknown error');
         }
         
         // Process dashboard
-        if (dashboardResponse.ok) {
-          const dashboardData = await dashboardResponse.json();
+        if (dashboardResponse.status === 'fulfilled' && dashboardResponse.value.ok) {
+          const dashboardData = await dashboardResponse.value.json();
           if (mounted) {
             setDashboardData(dashboardData);
             console.log('Dashboard data loaded:', dashboardData);
           }
+        } else {
+          console.log('Dashboard fetch failed:', dashboardResponse.reason || 'Unknown error');
         }
         
         if (mounted) {
