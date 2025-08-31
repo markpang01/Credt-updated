@@ -39,8 +39,11 @@ export default function UtilizationPilot() {
 
   // Get link token on component mount
   useEffect(() => {
-    fetchLinkToken();
-    fetchDashboard();
+    const initializeApp = async () => {
+      await fetchLinkToken();
+      await fetchDashboard();
+    };
+    initializeApp();
   }, []);
 
   const fetchLinkToken = async () => {
