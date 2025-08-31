@@ -663,18 +663,51 @@ export default function UtilizationPilot() {
                     <p className="text-xs text-muted-foreground">0-9% utilization ▼</p>
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuContent align="start" className="w-80 max-h-96 overflow-y-auto">
                   {creditCards?.filter(card => card.band.band === 'excellent').map(card => (
-                    <DropdownMenuItem key={card.id} className="flex items-center justify-between">
-                      <span className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        {card.name}
-                      </span>
-                      <span className="text-xs font-medium text-green-600">{card.utilization}%</span>
-                    </DropdownMenuItem>
+                    <div key={card.id} className="p-3 border-b last:border-b-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                          <span className="font-medium text-sm">{card.name}</span>
+                        </div>
+                        <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
+                          {card.utilization}% - {card.band.band.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-2">{card.officialName}</div>
+                      <Progress value={card.utilization} className="h-1 mb-2" />
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Balance:</span>
+                          <div className="font-medium">{formatCurrency(card.balance)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Limit:</span>
+                          <div className="font-medium">{formatCurrency(card.limit)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Statement Close:</span>
+                          <div className="font-medium">{formatDate(card.closeDate)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Days Until Close:</span>
+                          <div className={`font-medium ${card.daysUntilClose <= 3 ? 'text-red-600' : 'text-green-600'}`}>
+                            {card.daysUntilClose} days
+                          </div>
+                        </div>
+                      </div>
+                      {card.paydownAmount > 0 && (
+                        <div className="mt-2 p-2 bg-green-50 rounded text-xs">
+                          <span className="text-green-700 font-medium">
+                            Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to maintain 9% utilization
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {creditCards?.filter(card => card.band.band === 'excellent').length === 0 && (
-                    <DropdownMenuItem disabled>No cards in excellent range</DropdownMenuItem>
+                    <div className="p-3 text-center text-muted-foreground text-sm">No cards in excellent range</div>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
