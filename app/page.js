@@ -38,64 +38,51 @@ export default function UtilizationPilot() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Get link token on component mount
+  // Force loading to false after a short delay to prevent hanging
   useEffect(() => {
-    let mounted = true;
+    const timer = setTimeout(() => {
+      console.log('Forcing loading to false after 3 seconds');
+      setLoading(false);
+      setDataLoaded(true);
+    }, 3000);
     
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Fetch data in parallel
+  useEffect(() => {
     const fetchData = async () => {
-      console.log('Starting data fetch...');
-      
-      // Set a max timeout to ensure loading state doesn't hang
-      const maxTimeout = setTimeout(() => {
-        if (mounted) {
-          console.log('Max timeout reached - forcing loading to false');
-          setLoading(false);
-        }
-      }, 8000);
-      
       try {
-        // Fetch dashboard data
+        console.log('Fetching dashboard data...');
         const dashboardResponse = await fetch('/api/dashboard');
         if (dashboardResponse.ok) {
           const data = await dashboardResponse.json();
-          if (mounted) {
-            console.log('Dashboard data received:', data);
-            setDashboardData(data);
-          }
-        } else {
-          console.error('Dashboard fetch failed:', dashboardResponse.status);
-        }
-        
-        // Fetch link token
-        const linkResponse = await fetch('/api/link-token');
-        if (linkResponse.ok) {
-          const linkData = await linkResponse.json();
-          if (mounted && linkData.link_token) {
-            console.log('Link token received');
-            setLinkToken(linkData.link_token);
-          }
-        } else {
-          console.error('Link token fetch failed:', linkResponse.status);
+          console.log('Dashboard data loaded:', data);
+          setDashboardData(data);
         }
       } catch (error) {
-        console.error('Fetch error:', error);
-        if (mounted) {
-          setError('Failed to load data');
+        console.error('Dashboard fetch error:', error);
+      }
+    };
+    
+    const fetchLinkToken = async () => {
+      try {
+        console.log('Fetching link token...');
+        const response = await fetch('/api/link-token');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.link_token) {
+            console.log('Link token loaded');
+            setLinkToken(data.link_token);
+          }
         }
-      } finally {
-        clearTimeout(maxTimeout);
-        if (mounted) {
-          console.log('Setting loading to false');
-          setLoading(false);
-        }
+      } catch (error) {
+        console.error('Link token fetch error:', error);
       }
     };
     
     fetchData();
-    
-    return () => {
-      mounted = false;
-    };
+    fetchLinkToken();
   }, []);
 
   const fetchLinkToken = async () => {
