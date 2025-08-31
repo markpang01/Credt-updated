@@ -262,7 +262,7 @@ export default function UtilizationPilot() {
                 </div>
                 <Button 
                   onClick={openPlaidLink} 
-                  disabled={!ready || loading}
+                  disabled={false}
                   className="w-full"
                   size="lg"
                 >
