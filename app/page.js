@@ -54,10 +54,20 @@ export default function UtilizationPilot() {
 
   const fetchLinkToken = async () => {
     try {
+      console.log('Fetching link token...');
       const response = await fetch('/api/link-token');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Link token response:', data);
+      
       if (data.link_token) {
         setLinkToken(data.link_token);
+      } else {
+        console.error('No link_token in response');
       }
     } catch (error) {
       console.error('Error fetching link token:', error);
