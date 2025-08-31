@@ -204,17 +204,17 @@ export default function UtilizationPilot() {
     return COLORS[band] || '#6b7280';
   };
 
-  // Temporarily skip loading screen to test the button
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen bg-background flex items-center justify-center">
-  //       <div className="text-center">
-  //         <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-  //         <p className="text-muted-foreground">Loading your credit utilization data...</p>
-  //       </div>
-  //     );
-  //   }
-  // }
+  // Fixed loading logic - only show loading for first 2 seconds max
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your credit utilization data...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show onboarding if we don't have dashboard data or have no credit cards
   if (!dashboardData || !dashboardData.creditCards || dashboardData.creditCards.length === 0) {
