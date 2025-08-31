@@ -1,72 +1,72 @@
 [
   {
     "test": "Health Check",
-    "success": false,
-    "message": "Health endpoint returned status 502",
-    "timestamp": "2025-08-31T03:05:32.716366",
-    "details": ""
+    "success": true,
+    "message": "Health endpoint responding correctly",
+    "timestamp": "2025-08-31T03:06:06.725261",
+    "details": null
   },
   {
     "test": "Plaid Link Token",
-    "success": false,
-    "message": "Link token endpoint returned status 502",
-    "timestamp": "2025-08-31T03:05:33.268195",
-    "details": ""
+    "success": true,
+    "message": "Link token generated successfully",
+    "timestamp": "2025-08-31T03:06:07.559602",
+    "details": null
   },
   {
     "test": "Dashboard Empty State",
-    "success": false,
-    "message": "Dashboard endpoint returned status 502",
-    "timestamp": "2025-08-31T03:05:33.821964",
-    "details": ""
+    "success": true,
+    "message": "Dashboard handles empty state correctly",
+    "timestamp": "2025-08-31T03:06:08.102338",
+    "details": null
   },
   {
     "test": "Accounts Endpoint",
-    "success": false,
-    "message": "Accounts endpoint returned status 502",
-    "timestamp": "2025-08-31T03:05:34.370186",
-    "details": ""
+    "success": true,
+    "message": "Accounts endpoint working, returned 0 accounts",
+    "timestamp": "2025-08-31T03:06:08.627609",
+    "details": null
   },
   {
     "test": "Database Connectivity",
-    "success": false,
-    "message": "Unexpected response from database test: 502",
-    "timestamp": "2025-08-31T03:05:34.921148",
+    "success": true,
+    "message": "Database connection working (via accounts endpoint)",
+    "timestamp": "2025-08-31T03:06:09.156577",
     "details": null
   },
   {
     "test": "404 Error Handling",
-    "success": false,
-    "message": "Expected 404, got 502",
-    "timestamp": "2025-08-31T03:05:35.470314",
-    "details": ""
+    "success": true,
+    "message": "Invalid routes properly return 404",
+    "timestamp": "2025-08-31T03:06:09.669186",
+    "details": null
   },
   {
     "test": "Utilization Calculation",
     "success": true,
     "message": "All utilization calculations correct",
-    "timestamp": "2025-08-31T03:05:35.971620",
+    "timestamp": "2025-08-31T03:06:10.169415",
     "details": null
   },
   {
     "test": "Utilization Bands",
     "success": true,
     "message": "All utilization band calculations correct",
-    "timestamp": "2025-08-31T03:05:36.471811",
+    "timestamp": "2025-08-31T03:06:10.669546",
     "details": null
   },
   {
     "test": "Paydown Calculation",
     "success": true,
     "message": "All paydown calculations correct",
-    "timestamp": "2025-08-31T03:05:36.971976",
+    "timestamp": "2025-08-31T03:06:11.169700",
     "details": null
   },
   {
     "test": "POST Endpoints Structure",
-    "success": false,
-    "message": "POST endpoint structure test failed: 502",
-    "timestamp": "2025-08-31T03:05:37.525635",
+    "success": true,
+    "message": "POST endpoints handle invalid requests properly",
+    "timestamp": "2025-08-31T03:06:11.770963",
     "details": null
   }
 ]
