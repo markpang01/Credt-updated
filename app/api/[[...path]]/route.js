@@ -246,7 +246,13 @@ export async function POST(request, { params }) {
     switch (path) {
       case 'exchange-token':
         try {
-          const { public_token } = body;
+          const { public_token, metadata } = body;
+          
+          if (!public_token) {
+            return NextResponse.json({ error: 'Missing public_token' }, { status: 400 });
+          }
+          
+          console.log('Exchanging public token for access token...');
           
           // Exchange public token for access token
           const tokenResponse = await plaidClient.itemPublicTokenExchange({
@@ -255,6 +261,8 @@ export async function POST(request, { params }) {
 
           const accessToken = tokenResponse.data.access_token;
           const itemId = tokenResponse.data.item_id;
+          
+          console.log('Token exchange successful, fetching account details...');
 
           // Get account information
           const accountsResponse = await plaidClient.accountsGet({
