@@ -242,7 +242,7 @@ export default function UtilizationPilot() {
     );
   }
 
-  const { creditCards, overallUtilization, totalLimit, totalBalance, recommendations, summary } = dashboardData;
+  const { creditCards, overallUtilization, totalLimit, totalBalance, recommendations, summary } = dashboardData || {};
 
   return (
     <div className="min-h-screen bg-background">
