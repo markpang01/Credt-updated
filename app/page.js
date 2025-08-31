@@ -605,14 +605,14 @@ export default function UtilizationPilot() {
           </Alert>
         )}
 
-        {/* Priority Recommendations */}
-        {recommendations && recommendations.length > 0 && (
+        {/* Priority Recommendations - Only cards needing payment within 2 weeks */}
+        {recommendations && recommendations.filter(rec => rec.daysUntilClose <= 14).length > 0 && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Urgent Payment Recommendations</AlertTitle>
             <AlertDescription>
               <div className="mt-3 grid gap-2">
-                {recommendations.slice(0, 3).map((rec, index) => (
+                {recommendations.filter(rec => rec.daysUntilClose <= 14).slice(0, 3).map((rec, index) => (
                   <div key={index} className="flex items-center justify-between bg-white/50 rounded-md px-3 py-2 border">
                     <div className="flex items-center space-x-3">
                       <Badge variant={rec.priority === 'high' ? 'destructive' : rec.priority === 'medium' ? 'default' : 'secondary'} className="text-xs">
@@ -624,8 +624,8 @@ export default function UtilizationPilot() {
                       </span>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-sm">{formatCurrency(rec.amount)}</div>
-                      <div className="text-xs text-muted-foreground">{rec.daysUntilClose} days left</div>
+                      <div className="font-semibold text-sm">Pay {formatCurrency(rec.amount)}</div>
+                      <div className="text-xs text-muted-foreground">by {formatDate(rec.closeDate)}</div>
                     </div>
                   </div>
                 ))}
