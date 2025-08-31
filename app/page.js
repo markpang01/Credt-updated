@@ -801,83 +801,11 @@ export default function UtilizationPilot() {
           </Card>
         </div>
 
-        <Tabs defaultValue="cards" className="space-y-6">
+        <Tabs defaultValue="recommendations" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="cards">Credit Cards</TabsTrigger>
             <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="cards" className="space-y-6">
-            <div className="grid gap-6">
-              {creditCards && creditCards.map((card) => (
-                <Card key={card.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center">
-                          <CreditCard className="mr-2 h-5 w-5" />
-                          {card.name}
-                        </CardTitle>
-                        {card.officialName && (
-                          <CardDescription>{card.officialName}</CardDescription>
-                        )}
-                      </div>
-                      <Badge 
-                        style={{ backgroundColor: getBandColor(card.band.band) }}
-                        className="text-white"
-                      >
-                        {card.utilization}% - {card.band.band.toUpperCase()}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Current Utilization</span>
-                        <span className="text-sm">{card.utilization}%</span>
-                      </div>
-                      <Progress 
-                        value={card.utilization} 
-                        className="h-2"
-                      />
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Balance</p>
-                          <p className="font-medium">{formatCurrency(card.balance)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Limit</p>
-                          <p className="font-medium">{formatCurrency(card.limit)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Statement Close</p>
-                          <p className="font-medium">{formatDate(card.closeDate)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Days Until Close</p>
-                          <p className={`font-medium ${card.daysUntilClose <= 3 ? 'text-red-600' : 'text-green-600'}`}>
-                            {card.daysUntilClose} days
-                          </p>
-                        </div>
-                      </div>
-
-                      {card.paydownAmount > 0 && (
-                        <Alert>
-                          <Target className="h-4 w-4" />
-                          <AlertTitle>Payment Recommendation</AlertTitle>
-                          <AlertDescription>
-                            Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to achieve 9% utilization
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
 
           <TabsContent value="recommendations" className="space-y-6">
             <Card>
