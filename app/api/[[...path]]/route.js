@@ -261,18 +261,26 @@ export async function POST(request, { params }) {
 
           const accounts = accountsResponse.data.accounts;
 
-          // Store accounts in database
+          // Store accounts in database with user association
+          const userId = 'sandbox_user_001'; // In production, get from auth session
+          
           for (const account of accounts) {
             await db.collection('accounts').updateOne(
-              { account_id: account.account_id },
+              { 
+                account_id: account.account_id,
+                user_id: userId // Associate with user
+              },
               {
                 $set: {
                   ...account,
+                  user_id: userId,
                   access_token: accessToken,
                   item_id: itemId,
                   lastUpdated: new Date().toISOString(),
                   // Try to get last statement date from account metadata
-                  lastStatementDate: null // Will be refined over time
+                  lastStatementDate: null, // Will be refined over time
+                  // Add sandbox-specific fields for testing
+                  is_sandbox: process.env.PLAID_ENV === 'sandbox'
                 }
               },
               { upsert: true }
