@@ -59,7 +59,13 @@ export default function UtilizationPilot() {
     try {
       setLoading(true);
       const response = await fetch('/api/dashboard');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Dashboard data:', data); // Debug log
       setDashboardData(data);
       setError(null);
     } catch (error) {
