@@ -412,7 +412,7 @@ export default function UtilizationPilot() {
           <div className="text-center max-w-2xl mx-auto">
             <div className="mb-8">
               <Zap className="h-16 w-16 mx-auto mb-4 text-primary" />
-              <h1 className="text-4xl font-bold mb-2">Utilization Pilot</h1>
+              <h1 className="text-4xl font-bold mb-2">Credt</h1>
               <p className="text-xl text-muted-foreground mb-8">
                 Time your payments to what credit models actually see
               </p>
