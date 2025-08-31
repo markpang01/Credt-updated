@@ -40,8 +40,14 @@ export default function UtilizationPilot() {
   // Get link token on component mount
   useEffect(() => {
     const initializeApp = async () => {
-      await fetchLinkToken();
-      await fetchDashboard();
+      try {
+        console.log('Initializing app...');
+        await Promise.all([fetchLinkToken(), fetchDashboard()]);
+        console.log('App initialization complete');
+      } catch (error) {
+        console.error('App initialization failed:', error);
+        setLoading(false);
+      }
     };
     initializeApp();
   }, []);
