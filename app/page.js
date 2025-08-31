@@ -656,8 +656,28 @@ export default function UtilizationPilot() {
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{summary?.excellentCards || 0}</div>
-              <p className="text-xs text-muted-foreground">0-9% utilization</p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1">
+                    <div className="text-2xl font-bold text-green-600">{summary?.excellentCards || 0}</div>
+                    <p className="text-xs text-muted-foreground">0-9% utilization ▼</p>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  {creditCards?.filter(card => card.band.band === 'excellent').map(card => (
+                    <DropdownMenuItem key={card.id} className="flex items-center justify-between">
+                      <span className="flex items-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        {card.name}
+                      </span>
+                      <span className="text-xs font-medium text-green-600">{card.utilization}%</span>
+                    </DropdownMenuItem>
+                  ))}
+                  {creditCards?.filter(card => card.band.band === 'excellent').length === 0 && (
+                    <DropdownMenuItem disabled>No cards in excellent range</DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </CardContent>
           </Card>
 
@@ -667,10 +687,38 @@ export default function UtilizationPilot() {
               <AlertCircle className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {(summary?.warningCards || 0) + (summary?.badCards || 0) + (summary?.severeCards || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">Above 30% utilization</p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {(summary?.warningCards || 0) + (summary?.badCards || 0) + (summary?.severeCards || 0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Above 30% utilization ▼</p>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  {creditCards?.filter(card => card.utilization >= 30).map(card => (
+                    <DropdownMenuItem key={card.id} className="flex items-center justify-between">
+                      <span className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full mr-2 ${
+                          card.band.band === 'severe' ? 'bg-red-500' : 
+                          card.band.band === 'bad' ? 'bg-orange-500' : 'bg-yellow-500'
+                        }`}></div>
+                        {card.name}
+                      </span>
+                      <span className={`text-xs font-medium ${
+                        card.band.band === 'severe' ? 'text-red-600' : 
+                        card.band.band === 'bad' ? 'text-orange-600' : 'text-yellow-600'
+                      }`}>
+                        {card.utilization}%
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                  {creditCards?.filter(card => card.utilization >= 30).length === 0 && (
+                    <DropdownMenuItem disabled>No cards need attention</DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </CardContent>
           </Card>
 
