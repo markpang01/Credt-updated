@@ -91,9 +91,13 @@ export async function GET(request, { params }) {
 
       case 'link-token':
         try {
+          // Generate a consistent user ID for sandbox testing
+          // In production, this should come from authenticated user session
+          const userId = 'sandbox_user_001';
+          
           const linkTokenRequest = {
             user: {
-              client_user_id: 'unique_user_id_' + Date.now(),
+              client_user_id: userId,
             },
             client_name: 'Utilization Pilot',
             products: ['assets', 'transactions'],
