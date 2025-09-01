@@ -801,7 +801,8 @@ export default function UtilizationPilot() {
             </Button>
           </div>
 
-          <TabsContent value="recommendations" className="space-y-6">
+          {activeTab === 'recommendations' && (
+            <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Optimization Recommendations</CardTitle>
