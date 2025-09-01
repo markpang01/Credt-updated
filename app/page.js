@@ -802,7 +802,6 @@ export default function UtilizationPilot() {
           </div>
 
           {activeTab === 'recommendations' && (
-            <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Optimization Recommendations</CardTitle>
@@ -866,9 +865,9 @@ export default function UtilizationPilot() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
-          <TabsContent value="analytics" className="space-y-6">
+          {activeTab === 'analytics' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -930,8 +929,8 @@ export default function UtilizationPilot() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
     </div>
   );
