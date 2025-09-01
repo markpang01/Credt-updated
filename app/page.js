@@ -632,55 +632,54 @@ export default function UtilizationPilot() {
           </Alert>
         )}
 
-        {/* Overview Cards */}
+        {/* Overview Cards - Intuitive Mobile Stack Layout */}
         <div className="space-y-6 mb-8">
-          {/* First row: Overall Utilization and Healthy Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Overall Utilization</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{overallUtilization}%</div>
-                <Progress value={overallUtilization} className="mt-2" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {formatCurrency(totalBalance)} of {formatCurrency(totalLimit)}
-                </p>
-              </CardContent>
-            </Card>
+          {/* Overall Utilization - Always at top */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overall Utilization</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{overallUtilization}%</div>
+              <Progress value={overallUtilization} className="mt-2" />
+              <p className="text-xs text-muted-foreground mt-2">
+                {formatCurrency(totalBalance)} of {formatCurrency(totalLimit)}
+              </p>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Healthy Cards</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div 
-                  className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
-                  onClick={() => {
-                    console.log('Healthy cards clicked, current state:', healthyCardsExpanded);
-                    setHealthyCardsExpanded(!healthyCardsExpanded);
-                  }}
-                >
-                  <div className="text-2xl font-bold text-green-600">
-                    {creditCards?.filter(card => card.utilization < 30).length || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Under 30% utilization {healthyCardsExpanded ? '▲' : '▼'}
-                  </p>
+          {/* Healthy Cards - Expandable inline */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Healthy Cards</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div 
+                className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
+                onClick={() => {
+                  console.log('Healthy cards clicked, current state:', healthyCardsExpanded);
+                  setHealthyCardsExpanded(!healthyCardsExpanded);
+                }}
+              >
+                <div className="text-2xl font-bold text-green-600">
+                  {creditCards?.filter(card => card.utilization < 30).length || 0}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <p className="text-xs text-muted-foreground">
+                  Under 30% utilization {healthyCardsExpanded ? '▲' : '▼'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Expandable Healthy Cards Section - appears directly below */}
+          {/* Healthy Cards Expansion - Appears directly below the healthy cards card */}
           {healthyCardsExpanded && (
-            <div className="md:col-start-2">
-              <h3 className="text-lg font-semibold mb-4">Healthy Cards (Under 30% Utilization)</h3>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4 text-green-800">Healthy Cards (Under 30% Utilization)</h3>
               <div className="space-y-4">
                 {creditCards?.filter(card => card.utilization < 30).map((card, index) => (
-                  <div key={card.id} className="flex items-center justify-between bg-white/50 rounded-md px-4 py-3 border">
+                  <div key={card.id} className="flex items-center justify-between bg-white rounded-md px-4 py-3 border border-green-100">
                     <div className="flex items-center space-x-4">
                       <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
                         {card.band.band.toUpperCase()}
@@ -703,50 +702,37 @@ export default function UtilizationPilot() {
             </div>
           )}
 
-          {/* Second row: Cards Need Attention and Total Credit Limit */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cards Need Attention</CardTitle>
-                <AlertCircle className="h-4 w-4 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div 
-                  className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
-                  onClick={() => {
-                    console.log('Attention cards clicked, current state:', attentionCardsExpanded);
-                    setAttentionCardsExpanded(!attentionCardsExpanded);
-                  }}
-                >
-                  <div className="text-2xl font-bold text-orange-600">
-                    {creditCards?.filter(card => card.utilization >= 30).length || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Above 30% utilization {attentionCardsExpanded ? '▲' : '▼'}
-                  </p>
+          {/* Cards Need Attention - Expandable inline */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Cards Need Attention</CardTitle>
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div 
+                className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
+                onClick={() => {
+                  console.log('Attention cards clicked, current state:', attentionCardsExpanded);
+                  setAttentionCardsExpanded(!attentionCardsExpanded);
+                }}
+              >
+                <div className="text-2xl font-bold text-orange-600">
+                  {creditCards?.filter(card => card.utilization >= 30).length || 0}
                 </div>
-              </CardContent>
-            </Card>
+                <p className="text-xs text-muted-foreground">
+                  Above 30% utilization {attentionCardsExpanded ? '▲' : '▼'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Credit Limit</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totalLimit)}</div>
-                <p className="text-xs text-muted-foreground">Available credit power</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Expandable Cards Need Attention Section - appears directly below */}
+          {/* Cards Need Attention Expansion - Appears directly below the attention cards card */}
           {attentionCardsExpanded && (
-            <div className="md:col-start-1">
-              <h3 className="text-lg font-semibold mb-4">Cards Need Attention (Above 30% Utilization)</h3>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4 text-orange-800">Cards Need Attention (Above 30% Utilization)</h3>
               <div className="space-y-4">
                 {creditCards?.filter(card => card.utilization >= 30).map((card, index) => (
-                  <div key={card.id} className="bg-white/50 rounded-md px-4 py-3 border">
+                  <div key={card.id} className="bg-white rounded-md px-4 py-3 border border-orange-100">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-4">
                         <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
@@ -783,6 +769,18 @@ export default function UtilizationPilot() {
               </div>
             </div>
           )}
+
+          {/* Total Credit Limit - Always at bottom */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Credit Limit</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(totalLimit)}</div>
+              <p className="text-xs text-muted-foreground">Available credit power</p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="space-y-6">
