@@ -785,11 +785,21 @@ export default function UtilizationPilot() {
           )}
         </div>
 
-        <Tabs defaultValue="recommendations" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+        <div className="space-y-6">
+          <div className="flex space-x-2">
+            <Button 
+              variant={activeTab === 'recommendations' ? 'default' : 'outline'}
+              onClick={() => setActiveTab(activeTab === 'recommendations' ? '' : 'recommendations')}
+            >
+              Recommendations
+            </Button>
+            <Button 
+              variant={activeTab === 'analytics' ? 'default' : 'outline'}
+              onClick={() => setActiveTab(activeTab === 'analytics' ? '' : 'analytics')}
+            >
+              Analytics
+            </Button>
+          </div>
 
           <TabsContent value="recommendations" className="space-y-6">
             <Card>
