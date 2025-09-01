@@ -46,6 +46,7 @@ export default function UtilizationPilot() {
   const [error, setError] = useState(null);
   const [healthyCardsExpanded, setHealthyCardsExpanded] = useState(false);
   const [attentionCardsExpanded, setAttentionCardsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState('');
 
   const supabase = createClient();
 
