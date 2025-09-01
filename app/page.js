@@ -632,116 +632,54 @@ export default function UtilizationPilot() {
         )}
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overall Utilization</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{overallUtilization}%</div>
-              <Progress value={overallUtilization} className="mt-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                {formatCurrency(totalBalance)} of {formatCurrency(totalLimit)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Healthy Cards</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div 
-                className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
-                onClick={() => {
-                  console.log('Healthy cards clicked, current state:', healthyCardsExpanded);
-                  setHealthyCardsExpanded(!healthyCardsExpanded);
-                }}
-              >
-                <div className="text-2xl font-bold text-green-600">
-                  {creditCards?.filter(card => card.utilization < 30).length || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Under 30% utilization {healthyCardsExpanded ? '▲' : '▼'}
+        <div className="space-y-6 mb-8">
+          {/* First row: Overall Utilization and Healthy Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Overall Utilization</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{overallUtilization}%</div>
+                <Progress value={overallUtilization} className="mt-2" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {formatCurrency(totalBalance)} of {formatCurrency(totalLimit)}
                 </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cards Need Attention</CardTitle>
-              <AlertCircle className="h-4 w-4 text-orange-500" />
-            </CardHeader>
-            <CardContent>
-              <div 
-                className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
-                onClick={() => {
-                  console.log('Attention cards clicked, current state:', attentionCardsExpanded);
-                  setAttentionCardsExpanded(!attentionCardsExpanded);
-                }}
-              >
-                <div className="text-2xl font-bold text-orange-600">
-                  {creditCards?.filter(card => card.utilization >= 30).length || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Above 30% utilization {attentionCardsExpanded ? '▲' : '▼'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Credit Limit</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalLimit)}</div>
-              <p className="text-xs text-muted-foreground">Available credit power</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Expandable Healthy Cards Section */}
-        {healthyCardsExpanded && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-4">Healthy Cards (Under 30% Utilization)</h3>
-            <div className="space-y-4">
-              {creditCards?.filter(card => card.utilization < 30).map((card, index) => (
-                <div key={card.id} className="flex items-center justify-between bg-white/50 rounded-md px-4 py-3 border">
-                  <div className="flex items-center space-x-4">
-                    <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
-                      {card.band.band.toUpperCase()}
-                    </Badge>
-                    <div>
-                      <div className="font-medium text-sm">{card.name}</div>
-                      <div className="text-xs text-muted-foreground">{card.officialName}</div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {card.utilization}% • {formatCurrency(card.balance)} / {formatCurrency(card.limit)}
-                    </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Healthy Cards</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
+                  onClick={() => {
+                    console.log('Healthy cards clicked, current state:', healthyCardsExpanded);
+                    setHealthyCardsExpanded(!healthyCardsExpanded);
+                  }}
+                >
+                  <div className="text-2xl font-bold text-green-600">
+                    {creditCards?.filter(card => card.utilization < 30).length || 0}
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">Statement Close</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(card.closeDate)}</div>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Under 30% utilization {healthyCardsExpanded ? '▲' : '▼'}
+                  </p>
                 </div>
-              ))}
-            </div>
+              </CardContent>
+            </Card>
           </div>
-        )}
 
-        {/* Expandable Cards Need Attention Section */}
-        {attentionCardsExpanded && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-4">Cards Need Attention (Above 30% Utilization)</h3>
-            <div className="space-y-4">
-              {creditCards?.filter(card => card.utilization >= 30).map((card, index) => (
-                <div key={card.id} className="bg-white/50 rounded-md px-4 py-3 border">
-                  <div className="flex items-center justify-between mb-2">
+          {/* Expandable Healthy Cards Section - appears directly below */}
+          {healthyCardsExpanded && (
+            <div className="md:col-start-2">
+              <h3 className="text-lg font-semibold mb-4">Healthy Cards (Under 30% Utilization)</h3>
+              <div className="space-y-4">
+                {creditCards?.filter(card => card.utilization < 30).map((card, index) => (
+                  <div key={card.id} className="flex items-center justify-between bg-white/50 rounded-md px-4 py-3 border">
                     <div className="flex items-center space-x-4">
                       <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
                         {card.band.band.toUpperCase()}
@@ -759,24 +697,92 @@ export default function UtilizationPilot() {
                       <div className="text-xs text-muted-foreground">{formatDate(card.closeDate)}</div>
                     </div>
                   </div>
-                  {card.paydownAmount > 0 && (
-                    <div className={`mt-2 p-2 rounded text-xs ${
-                      card.band.band === 'severe' ? 'bg-red-50' : 
-                      card.band.band === 'bad' ? 'bg-orange-50' : 'bg-yellow-50'
-                    }`}>
-                      <span className={`font-medium ${
-                        card.band.band === 'severe' ? 'text-red-700' : 
-                        card.band.band === 'bad' ? 'text-orange-700' : 'text-yellow-700'
-                      }`}>
-                        💰 RECOMMENDED: Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to achieve 9% utilization
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* Second row: Cards Need Attention and Total Credit Limit */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Cards Need Attention</CardTitle>
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1"
+                  onClick={() => {
+                    console.log('Attention cards clicked, current state:', attentionCardsExpanded);
+                    setAttentionCardsExpanded(!attentionCardsExpanded);
+                  }}
+                >
+                  <div className="text-2xl font-bold text-orange-600">
+                    {creditCards?.filter(card => card.utilization >= 30).length || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Above 30% utilization {attentionCardsExpanded ? '▲' : '▼'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Credit Limit</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalLimit)}</div>
+                <p className="text-xs text-muted-foreground">Available credit power</p>
+              </CardContent>
+            </Card>
           </div>
-        )}
+
+          {/* Expandable Cards Need Attention Section - appears directly below */}
+          {attentionCardsExpanded && (
+            <div className="md:col-start-1">
+              <h3 className="text-lg font-semibold mb-4">Cards Need Attention (Above 30% Utilization)</h3>
+              <div className="space-y-4">
+                {creditCards?.filter(card => card.utilization >= 30).map((card, index) => (
+                  <div key={card.id} className="bg-white/50 rounded-md px-4 py-3 border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-4">
+                        <Badge style={{ backgroundColor: getBandColor(card.band.band) }} className="text-white text-xs">
+                          {card.band.band.toUpperCase()}
+                        </Badge>
+                        <div>
+                          <div className="font-medium text-sm">{card.name}</div>
+                          <div className="text-xs text-muted-foreground">{card.officialName}</div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {card.utilization}% • {formatCurrency(card.balance)} / {formatCurrency(card.limit)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium">Statement Close</div>
+                        <div className="text-xs text-muted-foreground">{formatDate(card.closeDate)}</div>
+                      </div>
+                    </div>
+                    {card.paydownAmount > 0 && (
+                      <div className={`mt-2 p-2 rounded text-xs ${
+                        card.band.band === 'severe' ? 'bg-red-50' : 
+                        card.band.band === 'bad' ? 'bg-orange-50' : 'bg-yellow-50'
+                      }`}>
+                        <span className={`font-medium ${
+                          card.band.band === 'severe' ? 'text-red-700' : 
+                          card.band.band === 'bad' ? 'text-orange-700' : 'text-yellow-700'
+                        }`}>
+                          💰 RECOMMENDED: Pay {formatCurrency(card.paydownAmount)} by {formatDate(card.closeDate)} to achieve 9% utilization
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <Tabs defaultValue="recommendations" className="space-y-6">
           <TabsList>
