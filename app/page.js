@@ -491,7 +491,7 @@ export default function UtilizationPilot() {
   }
 
   // Show onboarding if user has no credit cards connected
-  if (tempDashboardData && (!tempDashboardData.creditCards || tempDashboardData.creditCards.length === 0)) {
+  if (dashboardData && (!dashboardData.creditCards || dashboardData.creditCards.length === 0)) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
