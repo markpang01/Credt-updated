@@ -140,10 +140,27 @@ export async function GET(request, { params }) {
   try {
     const url = new URL(request.url);
     const path = params.path ? params.path.join('/') : '';
+    
+    // Get client IP for rate limiting (fallback to user-agent if no IP)
+    const clientId = request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    request.headers.get('user-agent') || 
+                    'anonymous';
 
-    // Health check doesn't require auth
+    // Health check doesn't require auth or rate limiting
     if (path === 'health') {
-      return NextResponse.json({ status: 'healthy', timestamp: new Date().toISOString() });
+      return NextResponse.json({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.PLAID_ENV || 'unknown'
+      });
+    }
+
+    // Apply rate limiting to other endpoints
+    if (!checkRateLimit(clientId, 100, 15 * 60 * 1000)) {
+      return NextResponse.json({ 
+        error: 'Rate limit exceeded. Please try again later.' 
+      }, { status: 429 });
     }
 
     // Get authenticated user for all other routes
