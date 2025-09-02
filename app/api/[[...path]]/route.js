@@ -345,6 +345,20 @@ export async function POST(request, { params }) {
   try {
     const url = new URL(request.url);
     const path = params.path ? params.path.join('/') : '';
+    
+    // Get client IP for rate limiting
+    const clientId = request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    request.headers.get('user-agent') || 
+                    'anonymous';
+
+    // Apply stricter rate limiting to POST endpoints
+    if (!checkRateLimit(`post_${clientId}`, 20, 15 * 60 * 1000)) {
+      return NextResponse.json({ 
+        error: 'Rate limit exceeded. Please try again later.' 
+      }, { status: 429 });
+    }
+
     const body = await request.json();
 
     // Get authenticated user
