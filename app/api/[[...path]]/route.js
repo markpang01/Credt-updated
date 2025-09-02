@@ -501,8 +501,11 @@ export async function POST(request, { params }) {
 
           for (const item of plaidItems) {
             try {
+              // Decrypt the access token
+              const accessToken = await getDecryptedAccessToken(item.access_token);
+              
               const accountsResponse = await plaidClient.accountsGet({
-                access_token: item.access_token,
+                access_token: accessToken,
               });
 
               const accounts = accountsResponse.data.accounts;
