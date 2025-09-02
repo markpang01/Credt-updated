@@ -400,15 +400,15 @@ export async function POST(request, { params }) {
 
           const accounts = accountsResponse.data.accounts;
 
-          // Store Plaid item
+          // Store Plaid item with encrypted access token
           const { data: plaidItem, error: itemError } = await supabase
             .from('plaid_items')
             .upsert({
               user_id: user.id,
               item_id: itemId,
-              access_token: accessToken, // In production, encrypt this
+              access_token: encryptedAccessToken, // Store encrypted token
               institution_id: metadata?.institution?.institution_id,
-              institution_name: metadata?.institution?.name,
+              institution_name: sanitizeString(metadata?.institution?.name || ''),
               is_active: true,
               updated_at: new Date().toISOString()
             }, {
