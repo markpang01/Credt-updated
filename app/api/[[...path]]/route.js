@@ -83,6 +83,42 @@ function getDaysUntilClose(closeDate, buffer = 2) {
   return Math.max(0, diffDays - buffer);
 }
 
+// Helper function to get decrypted access token
+async function getDecryptedAccessToken(encryptedToken) {
+  if (typeof encryptedToken === 'string') {
+    // If it's already a plain string (backward compatibility)
+    return encryptedToken;
+  }
+  
+  if (encryptedToken && encryptedToken.iv && encryptedToken.tag && encryptedToken.encrypted) {
+    // If it's an encrypted object, decrypt it
+    return decryptSensitiveData(encryptedToken);
+  }
+  
+  throw new Error('Invalid access token format');
+}
+
+// Simple rate limiting function
+function checkRateLimit(identifier, limit = 100, windowMs = 15 * 60 * 1000) {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  
+  if (!rateLimitStore.has(identifier)) {
+    rateLimitStore.set(identifier, []);
+  }
+  
+  const requests = rateLimitStore.get(identifier);
+  const recentRequests = requests.filter(timestamp => timestamp > windowStart);
+  
+  if (recentRequests.length >= limit) {
+    return false;
+  }
+  
+  recentRequests.push(now);
+  rateLimitStore.set(identifier, recentRequests);
+  return true;
+}
+
 // Get authenticated user
 async function getAuthenticatedUser(request) {
   try {
