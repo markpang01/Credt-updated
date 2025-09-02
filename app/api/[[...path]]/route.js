@@ -419,18 +419,18 @@ export async function POST(request, { params }) {
 
           if (itemError) throw itemError;
 
-          // Store accounts in database
+          // Store accounts in database with input sanitization
           const accountInserts = accounts.map(account => ({
             user_id: user.id,
             plaid_item_id: plaidItem.id,
             account_id: account.account_id,
-            name: account.name,
-            official_name: account.official_name,
-            type: account.type,
-            subtype: account.subtype,
-            current_balance: account.balances.current || 0,
+            name: sanitizeString(account.name || ''),
+            official_name: sanitizeString(account.official_name || ''),
+            type: sanitizeString(account.type || ''),
+            subtype: sanitizeString(account.subtype || ''),
+            current_balance: Math.max(0, account.balances.current || 0),
             available_balance: account.balances.available,
-            credit_limit: account.balances.limit,
+            credit_limit: Math.max(0, account.balances.limit || 0),
             target_utilization: 0.09, // Default 9%
             is_active: true,
             updated_at: new Date().toISOString()
