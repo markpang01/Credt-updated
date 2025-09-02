@@ -614,6 +614,12 @@ export async function POST(request, { params }) {
     }
   } catch (error) {
     console.error('API POST error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    
+    // Don't expose internal errors in production
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? error.message 
+      : 'Internal server error';
+      
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
