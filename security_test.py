@@ -503,7 +503,7 @@ class SecurityTestSuite:
         
         # Run all tests
         self.test_environment_validation()
-        self.test_enhanced_health_endpoint()
+        self.test_health_endpoint_enhanced()
         self.test_authentication_required()
         self.test_input_validation_exchange_token()
         self.test_input_validation_update_targets()
