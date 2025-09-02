@@ -401,12 +401,8 @@ export default function UtilizationPilot() {
     }
   };
 
-  // TEMPORARY: Use mock data instead of authentication
-  const tempUser = { email: 'demo@example.com' };
-  const tempDashboardData = mockDashboardData;
-
   // Show authentication screen if not logged in
-  if (!tempUser) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
