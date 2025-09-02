@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 import { createServiceClient, createServerClient } from '@/lib/supabase/server';
+import { encryptSensitiveData, decryptSensitiveData } from '@/lib/security/encryption';
+import { 
+  validateRequest, 
+  tokenExchangeSchema, 
+  accountUpdateSchema,
+  validateEnvironment,
+  sanitizeString 
+} from '@/lib/security/validation';
 
 // Initialize Plaid client
 const configuration = new Configuration({
