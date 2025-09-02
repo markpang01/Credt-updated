@@ -500,7 +500,17 @@ export async function POST(request, { params }) {
 
         } catch (error) {
           console.error('Error exchanging token:', error);
-          return NextResponse.json({ error: 'Failed to exchange token' }, { status: 500 });
+          
+          // Don't expose internal errors to client
+          if (error.message.includes('Validation failed')) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+          }
+          
+          // Generic error for security
+          return NextResponse.json({ 
+            error: 'Failed to exchange token', 
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+          }, { status: 500 });
         }
 
       case 'refresh-accounts':
