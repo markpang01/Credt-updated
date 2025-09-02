@@ -445,7 +445,7 @@ export default function UtilizationPilot() {
   }
 
   // Main dashboard with credit card data
-  const { creditCards, overallUtilization, totalLimit, totalBalance, recommendations, summary } = tempDashboardData || {};
+  const { creditCards, overallUtilization, totalLimit, totalBalance, recommendations, summary } = displayData || {};
 
   return (
     <div className="min-h-screen bg-background">
