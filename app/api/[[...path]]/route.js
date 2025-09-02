@@ -23,6 +23,18 @@ const configuration = new Configuration({
 
 const plaidClient = new PlaidApi(configuration);
 
+// Validate environment on startup
+try {
+  validateEnvironment();
+  console.log('✅ Environment validation passed');
+} catch (error) {
+  console.error('❌ Environment validation failed:', error.message);
+  // In production, you might want to exit the process here
+}
+
+// Rate limiting storage (in production, use Redis)
+const rateLimitStore = new Map();
+
 // Utility functions for utilization calculations
 function calculateUtilization(balance, limit) {
   return limit > 0 ? Math.round((balance / limit) * 100) : 0;
