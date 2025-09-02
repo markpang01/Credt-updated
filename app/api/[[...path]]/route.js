@@ -372,11 +372,9 @@ export async function POST(request, { params }) {
     switch (path) {
       case 'exchange-token':
         try {
-          const { public_token, metadata } = body;
-          
-          if (!public_token) {
-            return NextResponse.json({ error: 'Missing public_token' }, { status: 400 });
-          }
+          // Validate input using Zod schema
+          const validatedData = validateRequest(tokenExchangeSchema, body);
+          const { public_token, metadata } = validatedData;
           
           console.log('Exchanging public token for user:', user.id);
           
@@ -388,7 +386,12 @@ export async function POST(request, { params }) {
           const accessToken = tokenResponse.data.access_token;
           const itemId = tokenResponse.data.item_id;
           
-          console.log('Token exchange successful, fetching account details...');
+          console.log('Token exchange successful, encrypting access token...');
+          
+          // Encrypt the access token before storage
+          const encryptedAccessToken = encryptSensitiveData(accessToken);
+          
+          console.log('Access token encrypted, fetching account details...');
 
           // Get account information
           const accountsResponse = await plaidClient.accountsGet({
