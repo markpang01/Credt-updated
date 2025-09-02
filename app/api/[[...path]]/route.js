@@ -336,8 +336,14 @@ export async function GET(request, { params }) {
         return NextResponse.json({ error: 'Route not found' }, { status: 404 });
     }
   } catch (error) {
-    console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('API GET error:', error);
+    
+    // Don't expose internal errors in production
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? error.message 
+      : 'Internal server error';
+      
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
