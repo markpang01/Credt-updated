@@ -561,22 +561,24 @@ export async function POST(request, { params }) {
 
       case 'update-targets':
         try {
-          const { accountId, target, monthlyLimit } = body;
+          // Validate input using Zod schema
+          const validatedData = validateRequest(accountUpdateSchema, body);
+          const { accountId, target_utilization, monthly_paydown_limit } = validatedData;
           
-          if (accountId && target !== undefined) {
+          if (accountId && target_utilization !== undefined) {
             const { error: accountError } = await supabase
               .from('accounts')
-              .update({ target_utilization: target })
+              .update({ target_utilization })
               .eq('user_id', user.id)
               .eq('id', accountId);
 
             if (accountError) throw accountError;
           }
 
-          if (monthlyLimit !== undefined) {
+          if (monthly_paydown_limit !== undefined) {
             const { error: profileError } = await supabase
               .from('user_profiles')
-              .update({ monthly_paydown_limit: monthlyLimit })
+              .update({ monthly_paydown_limit })
               .eq('id', user.id);
 
             if (profileError) throw profileError;
@@ -585,6 +587,9 @@ export async function POST(request, { params }) {
           return NextResponse.json({ success: true });
         } catch (error) {
           console.error('Error updating targets:', error);
+          if (error.message.includes('Validation failed')) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+          }
           return NextResponse.json({ error: 'Failed to update targets' }, { status: 500 });
         }
 
