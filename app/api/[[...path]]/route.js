@@ -6,6 +6,7 @@ import {
   validateRequest, 
   tokenExchangeSchema, 
   accountUpdateSchema,
+  webhookSchema,
   validateEnvironment,
   sanitizeString 
 } from '@/lib/security/validation';
