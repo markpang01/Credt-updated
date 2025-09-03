@@ -242,7 +242,7 @@ export default function UtilizationPilot() {
         console.log('User exited Plaid Link');
       }
     },
-    env: 'sandbox',
+    env: process.env.NEXT_PUBLIC_PLAID_ENV || 'sandbox',
   };
   
   const { open: openPlaidLink, ready } = usePlaidLink(plaidConfig);
