@@ -179,7 +179,7 @@ export async function GET(request, { params }) {
               client_user_id: user.id, // Use actual user ID from Supabase auth
             },
             client_name: 'Utilization Pilot',
-            products: ['assets', 'transactions'],
+            products: ['assets', 'transactions', 'liabilities'],
             country_codes: ['US'],
             language: 'en',
             account_filters: {
