@@ -775,7 +775,13 @@ export async function POST(request, { params }) {
               console.log('Unhandled webhook type:', webhook_type, webhook_code);
           }
           
-          return NextResponse.json({ status: 'received' });
+          return NextResponse.json({ status: 'received' }, {
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'POST',
+              'Access-Control-Allow-Headers': 'Content-Type, plaid-verification',
+            }
+          });
         } catch (error) {
           console.error('Webhook processing error:', error);
           if (error.message.includes('Validation failed')) {
