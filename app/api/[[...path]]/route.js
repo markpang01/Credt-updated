@@ -54,24 +54,60 @@ function calculatePaydownAmount(currentBalance, limit, targetUtilization = 0.09)
   return Math.ceil(currentBalance - maxAllowed);
 }
 
-// Infer statement close date from transaction history
+// Infer statement close date using actual statement data and transaction history
 function inferStatementCloseDate(transactions, lastStatementDate) {
   if (lastStatementDate) {
+    // Use actual statement date from liabilities data
     const lastDate = new Date(lastStatementDate);
-    const nextMonth = new Date(lastDate);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    return nextMonth;
+    const nextStatement = new Date(lastDate);
+    
+    // Most credit cards have monthly cycles (30-31 days)
+    // Calculate next statement close date
+    nextStatement.setMonth(nextStatement.getMonth() + 1);
+    
+    console.log(`Using actual statement date: ${lastDate.toISOString().split('T')[0]}, next predicted: ${nextStatement.toISOString().split('T')[0]}`);
+    return nextStatement;
   }
   
-  // Fallback: assume close date is around same day each month
+  // Fallback: analyze transaction patterns or use default estimation
   const today = new Date();
-  const estimatedCloseDay = 15; // Default assumption
+  
+  // Try to infer from transaction patterns (if available)
+  if (transactions && transactions.length > 0) {
+    // Look for recurring charges or payment patterns that might indicate cycle
+    // This is a simplified pattern analysis - in production you'd want more sophisticated logic
+    const dates = transactions.map(t => new Date(t.date).getDate());
+    const frequentDates = dates.reduce((acc, date) => {
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const mostFrequentDate = Object.keys(frequentDates).reduce((a, b) => 
+      frequentDates[a] > frequentDates[b] ? a : b
+    );
+    
+    if (mostFrequentDate && frequentDates[mostFrequentDate] > 2) {
+      const inferredCloseDay = parseInt(mostFrequentDate);
+      const closeDate = new Date(today.getFullYear(), today.getMonth(), inferredCloseDay);
+      
+      if (closeDate < today) {
+        closeDate.setMonth(closeDate.getMonth() + 1);
+      }
+      
+      console.log(`Inferred statement close date from transaction patterns: day ${inferredCloseDay}`);
+      return closeDate;
+    }
+  }
+  
+  // Final fallback: mid-month estimation
+  const estimatedCloseDay = 15;
   const closeDate = new Date(today.getFullYear(), today.getMonth(), estimatedCloseDay);
   
   if (closeDate < today) {
     closeDate.setMonth(closeDate.getMonth() + 1);
   }
   
+  console.log(`Using fallback statement close date: day ${estimatedCloseDay}`);
   return closeDate;
 }
 
