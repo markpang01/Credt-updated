@@ -721,6 +721,69 @@ export async function POST(request, { params }) {
           return NextResponse.json({ error: 'Failed to update targets' }, { status: 500 });
         }
 
+      case 'webhook':
+        try {
+          // Validate webhook signature (when PLAID_WEBHOOK_SECRET is available)
+          if (process.env.PLAID_WEBHOOK_SECRET) {
+            const signature = request.headers.get('plaid-verification');
+            const rawBody = JSON.stringify(body);
+            
+            const isValidSignature = verifyWebhookSignature(
+              rawBody, 
+              signature, 
+              process.env.PLAID_WEBHOOK_SECRET
+            );
+            
+            if (!isValidSignature) {
+              console.error('Invalid webhook signature');
+              return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+            }
+          }
+
+          // Validate webhook data
+          const validatedData = validateRequest(webhookSchema, body);
+          const { webhook_type, webhook_code, item_id } = validatedData;
+          
+          console.log('Plaid webhook received:', { webhook_type, webhook_code, item_id });
+          
+          // Handle different webhook types
+          switch (webhook_type) {
+            case 'LIABILITIES':
+              if (webhook_code === 'DEFAULT_UPDATE') {
+                // Statement data has been updated - refresh accounts
+                console.log('Statement data updated for item:', item_id);
+                // In production, you might want to trigger a background job
+                // For now, just log it
+              }
+              break;
+              
+            case 'ASSETS':
+              if (webhook_code === 'BALANCE_UPDATE') {
+                console.log('Balance updated for item:', item_id);
+                // Could trigger real-time balance refresh
+              }
+              break;
+              
+            case 'ITEM':
+              if (webhook_code === 'ERROR') {
+                console.error('Plaid item error for item:', item_id);
+                // Mark item as needing re-authentication
+              }
+              break;
+              
+            default:
+              console.log('Unhandled webhook type:', webhook_type, webhook_code);
+          }
+          
+          return NextResponse.json({ status: 'received' });
+        } catch (error) {
+          console.error('Webhook processing error:', error);
+          if (error.message.includes('Validation failed')) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
+          }
+          return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+        }
+
       default:
         return NextResponse.json({ error: 'Route not found' }, { status: 404 });
     }
