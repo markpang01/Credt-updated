@@ -585,13 +585,46 @@ export async function POST(request, { params }) {
 
               const accounts = accountsResponse.data.accounts;
 
+              // Also fetch updated liabilities data
+              let liabilitiesData = null;
+              try {
+                const liabilitiesResponse = await plaidClient.liabilitiesGet({
+                  access_token: accessToken,
+                });
+                liabilitiesData = liabilitiesResponse.data.liabilities;
+              } catch (liabilitiesError) {
+                console.warn('Could not fetch liabilities data during refresh:', liabilitiesError.message);
+              }
+
               for (const account of accounts) {
+                // Find corresponding liabilities data for this account
+                let statementUpdate = {};
+                if (liabilitiesData?.credit) {
+                  const creditLiability = liabilitiesData.credit.find(
+                    liability => liability.account_id === account.account_id
+                  );
+                  
+                  if (creditLiability) {
+                    statementUpdate = {
+                      last_statement_balance: creditLiability.last_statement_balance || 0,
+                      last_statement_date: creditLiability.last_statement_issue_date || null,
+                      minimum_payment_amount: creditLiability.minimum_payment_amount || 0,
+                      next_payment_due_date: creditLiability.next_payment_due_date || null,
+                      last_payment_amount: creditLiability.last_payment_amount || 0,
+                      last_payment_date: creditLiability.last_payment_date || null,
+                      is_overdue: creditLiability.is_overdue || false
+                    };
+                  }
+                }
+
                 const { error: updateError } = await supabase
                   .from('accounts')
                   .update({
                     current_balance: account.balances.current || 0,
                     available_balance: account.balances.available,
                     credit_limit: account.balances.limit,
+                    // Update statement data if available
+                    ...statementUpdate,
                     updated_at: new Date().toISOString()
                   })
                   .eq('user_id', user.id)
