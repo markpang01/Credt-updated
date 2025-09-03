@@ -406,6 +406,20 @@ export async function POST(request, { params }) {
 
           const accounts = accountsResponse.data.accounts;
 
+          // Get liabilities information for statement data
+          let liabilitiesData = null;
+          try {
+            console.log('Fetching liabilities data for statement information...');
+            const liabilitiesResponse = await plaidClient.liabilitiesGet({
+              access_token: accessToken,
+            });
+            liabilitiesData = liabilitiesResponse.data.liabilities;
+            console.log('Liabilities data retrieved:', liabilitiesData?.credit?.length || 0, 'credit accounts');
+          } catch (liabilitiesError) {
+            console.warn('Could not fetch liabilities data:', liabilitiesError.message);
+            // Continue without liabilities data - not all accounts may support it
+          }
+
           // Store Plaid item with encrypted access token
           const { data: plaidItem, error: itemError } = await supabase
             .from('plaid_items')
