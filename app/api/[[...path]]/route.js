@@ -439,22 +439,50 @@ export async function POST(request, { params }) {
 
           if (itemError) throw itemError;
 
-          // Store accounts in database with input sanitization
-          const accountInserts = accounts.map(account => ({
-            user_id: user.id,
-            plaid_item_id: plaidItem.id,
-            account_id: account.account_id,
-            name: sanitizeString(account.name || ''),
-            official_name: sanitizeString(account.official_name || ''),
-            type: sanitizeString(account.type || ''),
-            subtype: sanitizeString(account.subtype || ''),
-            current_balance: Math.max(0, account.balances.current || 0),
-            available_balance: account.balances.available,
-            credit_limit: Math.max(0, account.balances.limit || 0),
-            target_utilization: 0.09, // Default 9%
-            is_active: true,
-            updated_at: new Date().toISOString()
-          }));
+          // Store accounts in database with input sanitization and statement data
+          const accountInserts = accounts.map(account => {
+            // Find corresponding liabilities data for this account
+            let statementData = {};
+            if (liabilitiesData?.credit) {
+              const creditLiability = liabilitiesData.credit.find(
+                liability => liability.account_id === account.account_id
+              );
+              
+              if (creditLiability) {
+                statementData = {
+                  last_statement_balance: creditLiability.last_statement_balance || 0,
+                  last_statement_date: creditLiability.last_statement_issue_date || null,
+                  minimum_payment_amount: creditLiability.minimum_payment_amount || 0,
+                  next_payment_due_date: creditLiability.next_payment_due_date || null,
+                  last_payment_amount: creditLiability.last_payment_amount || 0,
+                  last_payment_date: creditLiability.last_payment_date || null,
+                  is_overdue: creditLiability.is_overdue || false
+                };
+                console.log(`Statement data found for ${account.name}:`, {
+                  lastStatementDate: statementData.last_statement_date,
+                  lastStatementBalance: statementData.last_statement_balance
+                });
+              }
+            }
+
+            return {
+              user_id: user.id,
+              plaid_item_id: plaidItem.id,
+              account_id: account.account_id,
+              name: sanitizeString(account.name || ''),
+              official_name: sanitizeString(account.official_name || ''),
+              type: sanitizeString(account.type || ''),
+              subtype: sanitizeString(account.subtype || ''),
+              current_balance: Math.max(0, account.balances.current || 0),
+              available_balance: account.balances.available,
+              credit_limit: Math.max(0, account.balances.limit || 0),
+              target_utilization: 0.09, // Default 9%
+              // Add statement data from liabilities
+              ...statementData,
+              is_active: true,
+              updated_at: new Date().toISOString()
+            };
+          });
 
           const { data: insertedAccounts, error: accountsError } = await supabase
             .from('accounts')
