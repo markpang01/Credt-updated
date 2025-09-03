@@ -59,6 +59,13 @@ CREATE TABLE IF NOT EXISTS public.accounts (
   estimated_close_date DATE, -- Inferred statement close date
   next_close_date DATE, -- Predicted next close date
   
+  -- Additional liabilities data from Plaid
+  minimum_payment_amount DECIMAL,
+  next_payment_due_date DATE,
+  last_payment_amount DECIMAL,
+  last_payment_date DATE,
+  is_overdue BOOLEAN DEFAULT false,
+  
   -- Metadata
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
